@@ -1,0 +1,26 @@
+# Markdown and AI-generated files
+*.md
+docs/
+.claude/
+.worktrees/
+
+# Build artifacts
+bin/
+dist/
+*.exe
+*.test
+coverage.out
+coverage.html
+
+# Go
+vendor/
+
+# Helm
+charts/*/charts/
+charts/*/requirements.lock
+*.tgz
+
+# OS
+.DS_Store
+*.swp
+*~

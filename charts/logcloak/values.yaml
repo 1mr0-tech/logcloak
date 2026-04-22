@@ -1,0 +1,46 @@
+replicaCount: 2
+
+image:
+  repository: ghcr.io/1mr0-tech/logcloak-webhook
+  tag: ""
+  pullPolicy: IfNotPresent
+
+tls:
+  certManager: false
+  mode: self-signed  # self-signed | certManager | bring-your-own
+
+webhook:
+  failurePolicy: Ignore  # Ignore | Fail
+  timeoutSeconds: 5
+
+controller:
+  image: ghcr.io/1mr0-tech/logcloak-controller
+  ruleCacheTTL: 30s
+
+sidecar:
+  image: ghcr.io/1mr0-tech/logcloak-sidecar
+  auditLog: false
+  processingTimeoutMs: 5
+  maxLineSizeBytes: 1048576  # 1MB
+  resources:
+    requests:
+      cpu: 5m
+      memory: 20Mi
+    limits:
+      cpu: 50m
+      memory: 64Mi
+
+distroless:
+  shellImage: ghcr.io/1mr0-tech/logcloak-static-sh:latest
+
+metrics:
+  enabled: true
+  port: 9090
+
+serviceAccount:
+  create: true
+  name: logcloak
+
+namespaceSelector:
+  matchLabels:
+    logcloak.io/inject: "true"
