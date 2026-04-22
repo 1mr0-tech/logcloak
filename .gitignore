@@ -1,5 +1,6 @@
 # Markdown and AI-generated files
 *.md
+!documentation.md
 docs/
 .claude/
 .worktrees/
