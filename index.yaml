@@ -1,3 +1,27 @@
 apiVersion: v1
-entries: {}
-generated: "2026-04-22T00:00:00Z"
+entries:
+  logcloak:
+  - apiVersion: v2
+    appVersion: 0.1.0
+    created: "2026-04-22T15:35:44.359649866+05:30"
+    description: Real-time Kubernetes pod log masker — redacts PII and OTP data before
+      logs reach kubectl or storage
+    digest: 505fe14542ebe7f7f4ff702f675839a7b71268f2ba79a2c9ed05c8667372871a
+    home: https://github.com/1mr0-tech/logcloak
+    keywords:
+    - kubernetes
+    - logging
+    - security
+    - pii
+    - redaction
+    maintainers:
+    - email: imran.roshan.official@gmail.com
+      name: 1mr0-tech
+    name: logcloak
+    sources:
+    - https://github.com/1mr0-tech/logcloak
+    type: application
+    urls:
+    - https://1mr0-tech.github.io/logcloak/logcloak-0.1.0.tgz
+    version: 0.1.0
+generated: "2026-04-22T15:35:44.35926134+05:30"
