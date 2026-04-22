@@ -2,8 +2,8 @@ apiVersion: v2
 name: logcloak
 description: Real-time Kubernetes pod log masker — redacts PII and OTP data before logs reach kubectl or storage
 type: application
-version: 0.1.0
-appVersion: "0.1.0"
+version: 0.1.1
+appVersion: "0.1.1"
 keywords:
   - kubernetes
   - logging
