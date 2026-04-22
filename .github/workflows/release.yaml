@@ -7,6 +7,7 @@ on:
 
 env:
   REGISTRY: ghcr.io/1mr0-tech
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build-push:
@@ -15,23 +16,28 @@ jobs:
     permissions:
       contents: read
       packages: write
+      security-events: write
     strategy:
       matrix:
         binary: [webhook, controller, sidecar, cli]
     steps:
     - uses: actions/checkout@v4
+
     - uses: docker/setup-buildx-action@v3
+
     - name: Log in to GHCR
       uses: docker/login-action@v3
       with:
         registry: ghcr.io
         username: ${{ github.actor }}
         password: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Extract version
       id: version
       run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
     - name: Build and push ${{ matrix.binary }}
-      uses: docker/build-push-action@v5
+      uses: docker/build-push-action@v6
       with:
         context: .
         file: build/Dockerfile
@@ -44,6 +50,22 @@ jobs:
           ${{ env.REGISTRY }}/logcloak-${{ matrix.binary }}:${{ steps.version.outputs.VERSION }}
           ${{ env.REGISTRY }}/logcloak-${{ matrix.binary }}:latest
 
+    - name: Trivy vulnerability scan
+      uses: aquasecurity/trivy-action@0.28.0
+      with:
+        image-ref: ${{ env.REGISTRY }}/logcloak-${{ matrix.binary }}:${{ steps.version.outputs.VERSION }}
+        format: sarif
+        output: trivy-${{ matrix.binary }}.sarif
+        severity: CRITICAL,HIGH
+        exit-code: 1
+
+    - name: Upload Trivy results to GitHub Security
+      if: always()
+      uses: github/codeql-action/upload-sarif@v3
+      with:
+        sarif_file: trivy-${{ matrix.binary }}.sarif
+        category: trivy-${{ matrix.binary }}
+
   helm-publish:
     name: Publish Helm Chart
     runs-on: ubuntu-latest
@@ -55,18 +77,18 @@ jobs:
     - uses: actions/checkout@v4
       with:
         fetch-depth: 0
+
     - uses: azure/setup-helm@v4
+
     - name: Extract version
       id: version
       run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
+
     - name: Update chart version
       run: |
         sed -i "s/^version:.*/version: ${{ steps.version.outputs.VERSION }}/" charts/logcloak/Chart.yaml
         sed -i "s/^appVersion:.*/appVersion: \"${{ steps.version.outputs.VERSION }}\"/" charts/logcloak/Chart.yaml
-    - name: Package chart
-      run: |
-        mkdir -p dist
-        helm package charts/logcloak --destination dist/
+
     - name: Publish to gh-pages
       uses: helm/chart-releaser-action@v1.6.0
       with:
@@ -82,13 +104,16 @@ jobs:
       contents: write
     steps:
     - uses: actions/checkout@v4
+
     - uses: actions/setup-go@v5
       with:
         go-version: "1.22"
         cache: true
+
     - name: Build release binaries
       run: |
         VERSION=${GITHUB_REF_NAME#v}
+        mkdir -p dist
         for os in linux darwin; do
           for arch in amd64 arm64; do
             for bin in webhook controller sidecar cli; do
@@ -99,7 +124,8 @@ jobs:
             done
           done
         done
-    - name: Create release
+
+    - name: Create GitHub release
       uses: softprops/action-gh-release@v2
       with:
         files: dist/logcloak-*
