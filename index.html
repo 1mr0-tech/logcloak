@@ -170,24 +170,89 @@ footer .sep{margin:0 8px;opacity:.3}
     <a href="https://github.com/1mr0-tech/logcloak" class="btn btn-s">GitHub</a>
   </div>
 
-  <div class="term">
-    <div class="term-bar">
-      <div class="d dr"></div><div class="d dy"></div><div class="d dg"></div>
-      <span class="term-label">before &amp; after</span>
+  <div class="terms-row">
+    <div class="term">
+      <div class="term-bar">
+        <div class="d dr"></div><div class="d dy"></div><div class="d dg"></div>
+        <span class="term-label term-bad">without logcloak</span>
+      </div>
+      <div class="term-body">
+<span class="m">$ kubectl logs payment-pod</span>
+<span class="e">Processing payment for</span>
+<span class="e">  user@example.com</span>
+<span class="e">  card=4111111111111111</span>
+<span class="e">  otp=847291</span>
+<span class="e">Bearer eyJhbGciOiJIUzI1NiJ9</span>
+<span class="e">  .eyJzdWIiOiJ1c2VyIn0.abc</span>
+      </div>
     </div>
-    <div class="term-body">
-<span class="m"># without logcloak</span>
-<span class="e">$ kubectl logs payment-pod</span>
-<span class="e">Processing payment for user@example.com card=4111111111111111 otp=847291</span>
-<span class="e">Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyIn0.abc123</span>
-&nbsp;
-<span class="m"># with logcloak (same pod, same app, zero changes)</span>
-<span class="c">$ kubectl logs payment-pod</span>
-<span class="c">Processing payment for [REDACTED] card=[REDACTED] otp=[REDACTED]</span>
+    <div class="term">
+      <div class="term-bar">
+        <div class="d dr"></div><div class="d dy"></div><div class="d dg"></div>
+        <span class="term-label term-good">with logcloak</span>
+      </div>
+      <div class="term-body">
+<span class="m">$ kubectl logs payment-pod</span>
+<span class="c">Processing payment for</span>
+<span class="c">  [REDACTED]</span>
+<span class="c">  card=[REDACTED]</span>
+<span class="c">  otp=[REDACTED]</span>
 <span class="c">[REDACTED]</span>
+<span class="m">  (same pod · zero changes)</span>
+      </div>
     </div>
   </div>
 </div>
+
+<hr>
+
+<section class="sec">
+  <p class="sec-tag">The problem</p>
+  <h2 class="sec-title">Your logs are the gap in your security model</h2>
+  <p class="sec-sub">Most teams lock down their database with encrypted connections, strict RBAC, and audit logging — then ship the same plaintext data out through every log pipeline they operate.</p>
+
+  <div class="problem-layout">
+    <div class="problem-left">
+      <p style="color:var(--muted);line-height:1.8;margin-bottom:1.2rem">
+        A developer adds one debug line: <code>log.info("order for {}", user.email)</code>.
+        That line ends up in Datadog, Elasticsearch, an S3 bucket, your SIEM, and six
+        terminals belonging to people who were only supposed to see latency metrics.
+        Nobody notices. This is the default state of most Kubernetes deployments.
+      </p>
+      <p style="color:var(--muted);line-height:1.8">
+        logcloak intercepts at the source — before the container runtime captures a single byte —
+        so none of those downstream systems ever receive the raw data.
+      </p>
+
+      <div class="callout">
+        <div class="callout-head">&#x201C;But anyone with kubectl exec can see everything anyway&#x201D;</div>
+        <p>
+          True — and that&#x2019;s a separate control. <code>kubectl exec</code> requires explicit RBAC
+          that is typically restricted in production, heavily audited, and often disabled entirely.
+          <code>kubectl logs</code> access is handed out far more broadly: developers, support teams,
+          CI pipelines, log agents. logcloak defends the log surface. RBAC defends exec.
+          Use both.
+        </p>
+      </div>
+    </div>
+
+    <div class="problem-right">
+      <div class="leak-table-title">Where PII leaks &amp; whether logcloak stops it</div>
+      <table class="leak-table">
+        <tbody>
+          <tr><td class="leak-src">kubectl logs in a developer&#x2019;s terminal</td><td class="stop yes">&#x2713; stopped</td></tr>
+          <tr><td class="leak-src">/var/log/containers/ on the node</td><td class="stop yes">&#x2713; stopped</td></tr>
+          <tr><td class="leak-src">Log shippers (Fluent Bit, Fluentd, Promtail)</td><td class="stop yes">&#x2713; stopped</td></tr>
+          <tr><td class="leak-src">Third-party platforms (Datadog, Splunk, Elastic)</td><td class="stop yes">&#x2713; stopped</td></tr>
+          <tr><td class="leak-src">S3 / GCS log archives</td><td class="stop yes">&#x2713; stopped</td></tr>
+          <tr><td class="leak-src">CI/CD pipelines that capture stdout</td><td class="stop yes">&#x2713; stopped</td></tr>
+          <tr class="oos"><td class="leak-src">kubectl exec into a running container</td><td class="stop no">out of scope &mdash; use RBAC</td></tr>
+          <tr class="oos"><td class="leak-src">Application memory / heap dumps</td><td class="stop no">out of scope</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
 
 <hr>
 
