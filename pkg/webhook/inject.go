@@ -57,15 +57,13 @@ func BuildPatch(pod corev1.Pod, compiled []masker.Rule, sidecarImage string) ([]
 	initCtr := corev1.Container{
 		Name:    "logcloak-init",
 		Image:   "busybox:1.36",
-		Command: []string{"mkfifo", pipePath},
+		Command: []string{"mkfifo", "-m", "0666", pipePath},
 		VolumeMounts: []corev1.VolumeMount{
 			{Name: pipeVolume, MountPath: pipeMountDir},
 		},
 		SecurityContext: &corev1.SecurityContext{
 			ReadOnlyRootFilesystem:   boolPtr(true),
 			AllowPrivilegeEscalation: boolPtr(false),
-			RunAsNonRoot:             boolPtr(true),
-			RunAsUser:                int64Ptr(65534),
 		},
 	}
 	if len(pod.Spec.InitContainers) == 0 {
