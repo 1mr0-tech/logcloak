@@ -8,8 +8,8 @@ import (
 
 func TestLibrary_AllBuiltinsPresent(t *testing.T) {
 	required := []string{
-		"email", "phone-in", "phone-us", "otp-6digit",
-		"credit-card", "jwt", "ipv4-private", "uuid", "aadhaar", "pan-in",
+		"email", "phone-e164", "phone-us", "otp-6digit",
+		"credit-card", "jwt", "ipv4-private", "uuid", "iban", "ssn",
 	}
 	for _, name := range required {
 		if _, ok := patterns.Get(name); !ok {
@@ -20,7 +20,7 @@ func TestLibrary_AllBuiltinsPresent(t *testing.T) {
 
 func TestEmail_Matches(t *testing.T) {
 	p, _ := patterns.Get("email")
-	cases := []string{"user@example.com", "a.b+c@foo.co.in"}
+	cases := []string{"user@example.com", "a.b+c@foo.co.uk"}
 	for _, c := range cases {
 		if !p.Pattern.MatchString(c) {
 			t.Errorf("email pattern should match %q", c)
@@ -49,12 +49,29 @@ func TestOTP6_NoMatchLonger(t *testing.T) {
 	}
 }
 
-func TestPhoneIN_Matches(t *testing.T) {
-	p, _ := patterns.Get("phone-in")
-	cases := []string{"9876543210", "+919876543210", "+91-9876543210"}
+func TestPhoneE164_Matches(t *testing.T) {
+	p, _ := patterns.Get("phone-e164")
+	cases := []string{"+12025550104", "+442071838750", "+819012345678"}
 	for _, c := range cases {
 		if !p.Pattern.MatchString(c) {
-			t.Errorf("phone-in should match %q", c)
+			t.Errorf("phone-e164 should match %q", c)
+		}
+	}
+}
+
+func TestPhoneE164_NoMatch(t *testing.T) {
+	p, _ := patterns.Get("phone-e164")
+	if p.Pattern.MatchString("notaphone") {
+		t.Error("phone-e164 should not match plain string")
+	}
+}
+
+func TestPhoneUS_Matches(t *testing.T) {
+	p, _ := patterns.Get("phone-us")
+	cases := []string{"202-555-0104", "(202) 555-0104", "+12025550104"}
+	for _, c := range cases {
+		if !p.Pattern.MatchString(c) {
+			t.Errorf("phone-us should match %q", c)
 		}
 	}
 }
@@ -67,10 +84,10 @@ func TestJWT_Matches(t *testing.T) {
 	}
 }
 
-func TestPANIN_Matches(t *testing.T) {
-	p, _ := patterns.Get("pan-in")
-	if !p.Pattern.MatchString("ABCDE1234F") {
-		t.Error("pan-in should match valid PAN format")
+func TestJWT_NoMatch(t *testing.T) {
+	p, _ := patterns.Get("jwt")
+	if p.Pattern.MatchString("notajwt.nope.nope") {
+		t.Error("jwt should not match plain dot-separated string")
 	}
 }
 
@@ -94,27 +111,6 @@ func TestIPv4Private_Matches(t *testing.T) {
 	}
 }
 
-func TestUUID_Matches(t *testing.T) {
-	p, _ := patterns.Get("uuid")
-	if !p.Pattern.MatchString("550e8400-e29b-41d4-a716-446655440000") {
-		t.Error("uuid should match a valid UUID v4")
-	}
-}
-
-func TestAadhaar_Matches(t *testing.T) {
-	p, _ := patterns.Get("aadhaar")
-	if !p.Pattern.MatchString("2345 6789 0123") {
-		t.Error("aadhaar should match valid 12-digit aadhaar number")
-	}
-}
-
-func TestPhoneIN_NoMatch(t *testing.T) {
-	p, _ := patterns.Get("phone-in")
-	if p.Pattern.MatchString("5876543210") {
-		t.Error("phone-in should not match number starting with 5")
-	}
-}
-
 func TestIPv4Private_NoMatch(t *testing.T) {
 	p, _ := patterns.Get("ipv4-private")
 	if p.Pattern.MatchString("8.8.8.8") {
@@ -122,23 +118,43 @@ func TestIPv4Private_NoMatch(t *testing.T) {
 	}
 }
 
-func TestAadhaar_NoMatch(t *testing.T) {
-	p, _ := patterns.Get("aadhaar")
-	if p.Pattern.MatchString("1234 5678 9012") {
-		t.Error("aadhaar should not match number starting with 1")
+func TestUUID_Matches(t *testing.T) {
+	p, _ := patterns.Get("uuid")
+	if !p.Pattern.MatchString("550e8400-e29b-41d4-a716-446655440000") {
+		t.Error("uuid should match a valid UUID v4")
 	}
 }
 
-func TestJWT_NoMatch(t *testing.T) {
-	p, _ := patterns.Get("jwt")
-	if p.Pattern.MatchString("notajwt.nope.nope") {
-		t.Error("jwt should not match plain dot-separated string")
+func TestIBAN_Matches(t *testing.T) {
+	p, _ := patterns.Get("iban")
+	cases := []string{"GB29NWBK60161331926819", "DE89370400440532013000", "FR7614508590005808498637X2"}
+	for _, c := range cases {
+		if !p.Pattern.MatchString(c) {
+			t.Errorf("iban should match %q", c)
+		}
 	}
 }
 
-func TestPANIN_NoMatch(t *testing.T) {
-	p, _ := patterns.Get("pan-in")
-	if p.Pattern.MatchString("abcde1234f") {
-		t.Error("pan-in should not match lowercase string")
+func TestIBAN_NoMatch(t *testing.T) {
+	p, _ := patterns.Get("iban")
+	if p.Pattern.MatchString("notaniban") {
+		t.Error("iban should not match plain string")
+	}
+}
+
+func TestSSN_Matches(t *testing.T) {
+	p, _ := patterns.Get("ssn")
+	cases := []string{"123-45-6789", "123 45 6789"}
+	for _, c := range cases {
+		if !p.Pattern.MatchString(c) {
+			t.Errorf("ssn should match %q", c)
+		}
+	}
+}
+
+func TestSSN_NoMatch(t *testing.T) {
+	p, _ := patterns.Get("ssn")
+	if p.Pattern.MatchString("1234567890") {
+		t.Error("ssn should not match unformatted number")
 	}
 }
