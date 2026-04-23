@@ -77,7 +77,7 @@ func cmdPreview(args []string) {
 			fmt.Fprintf(os.Stderr, "open file: %v\n", err)
 			os.Exit(1)
 		}
-		defer in.Close()
+		defer in.Close() //nolint:errcheck
 	} else {
 		in = os.Stdin
 	}

@@ -15,8 +15,6 @@ import (
 	"github.com/1mr0-tech/logcloak/pkg/sentinel"
 )
 
-var version = "dev"
-
 const (
 	fifoPipe       = "/masker-pipe/app.pipe"
 	maskingTimeout = 5 * time.Millisecond
@@ -48,7 +46,7 @@ func main() {
 		fmt.Fprintf(os.Stderr, "[logcloak] failed to open FIFO %s: %v\n", fifoPipe, err)
 		os.Exit(1)
 	}
-	defer fifo.Close()
+	defer fifo.Close() //nolint:errcheck
 
 	scanner := bufio.NewScanner(fifo)
 	scanner.Buffer(make([]byte, maxLineBytes), maxLineBytes)
@@ -100,7 +98,7 @@ func runDropAll(podName, podNS, reason string) {
 		fmt.Fprintf(os.Stderr, "[logcloak] cannot open FIFO in drop-all mode: %v\n", err)
 		os.Exit(1)
 	}
-	defer fifo.Close()
+	defer fifo.Close() //nolint:errcheck
 	scanner := bufio.NewScanner(fifo)
 	scanner.Buffer(make([]byte, maxLineBytes), maxLineBytes)
 	for scanner.Scan() {
