@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: logcloak-helm-test
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    helm.sh/hook: test
+    helm.sh/hook-delete-policy: before-hook-creation,hook-succeeded
+spec:
+  restartPolicy: Never
+  containers:
+  - name: test
+    image: curlimages/curl:8.8.0
+    command:
+    - sh
+    - -c
+    - |
+      echo "Testing webhook healthz..."
+      curl -sf -k https://logcloak-webhook.{{ .Release.Namespace }}.svc/healthz
+      echo "Webhook is healthy"

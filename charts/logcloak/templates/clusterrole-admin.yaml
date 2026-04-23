@@ -1,0 +1,23 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: logcloak-admin
+  labels:
+    app.kubernetes.io/name: logcloak
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+rules:
+- apiGroups: ["logcloak.io"]
+  resources: ["maskingpolicies"]
+  verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: logcloak-viewer
+  labels:
+    app.kubernetes.io/name: logcloak
+    app.kubernetes.io/managed-by: {{ .Release.Service }}
+rules:
+- apiGroups: ["logcloak.io"]
+  resources: ["maskingpolicies"]
+  verbs: ["get", "list", "watch"]
