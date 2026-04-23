@@ -14,6 +14,46 @@ Real-time Kubernetes pod log masker. Redacts PII, OTPs, tokens, and sensitive da
 
 Works out of the box on **k3s, GKE, EKS, and AKS**.
 
+---
+
+## The problem
+
+Your app logs are probably leaking data you didn't mean to expose.
+
+A developer adds a debug line: `log.info("Processing order for {}", user.email)`. That line ships to Datadog, gets indexed in Elasticsearch, ends up in an S3 bucket, forwarded to your SIEM, and read by six people who were only supposed to see latency metrics. Nobody noticed. This is the default state of most Kubernetes deployments.
+
+**The actual attack surface is not your database — it's your logs.**
+
+Most teams have strong access controls on databases and strong encryption at rest, then inadvertently ship plaintext PII through every log pipeline they operate.
+
+### "But anyone with kubectl exec can see everything anyway"
+
+Yes — and that is a separate control. `kubectl exec` requires explicit RBAC permissions that are typically restricted in production, audited, and often completely disabled. `kubectl logs` access is handed out far more broadly — to developers, support teams, CI/CD pipelines, and log aggregation agents.
+
+logcloak defends the log surface specifically:
+
+| Where PII leaks | logcloak stops it |
+|---|---|
+| `kubectl logs` in a dev's terminal | ✅ |
+| `/var/log/containers/` on the node | ✅ |
+| Log shippers (Fluent Bit, Fluentd, Promtail) | ✅ — they read the node files |
+| Third-party platforms (Datadog, Splunk, Elastic) | ✅ — they receive the shipped files |
+| S3/GCS log archives | ✅ |
+| CI/CD pipelines that capture stdout | ✅ |
+| `kubectl exec` into a running container | ❌ — not in scope, use RBAC |
+| Application memory / heap dumps | ❌ — not in scope |
+
+### Who this is for
+
+- Teams that must comply with **GDPR, HIPAA, or PCI-DSS** and cannot audit every log statement in every service
+- Platforms where **developers have log access but must not see customer PII**
+- Any company shipping logs to a **third-party vendor** and wanting to limit what leaves the cluster
+- Teams that have tried "just don't log PII" as a policy and found it doesn't survive contact with a deadline
+
+logcloak is a defense-in-depth control. It works alongside RBAC, encryption at rest, and network policy — it does not replace them.
+
+---
+
 ## How it works
 
 logcloak injects a masker sidecar into opted-in pods via a Mutating Admission Webhook. The app container's stdout/stderr is redirected through an in-memory named pipe (never touches disk) to the sidecar, which applies regex masking and outputs clean logs to its own stdout. The container runtime only ever captures masked output.
