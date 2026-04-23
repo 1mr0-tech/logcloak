@@ -3,10 +3,10 @@ entries:
   logcloak:
   - apiVersion: v2
     appVersion: 0.2.0
-    created: "2026-04-23T06:21:20.169555299Z"
+    created: "2026-04-23T06:40:51.29135687Z"
     description: Real-time Kubernetes pod log masker — redacts PII and OTP data before
       logs reach kubectl or storage
-    digest: 6a1c47a5bf5ed77dafd1c22ffe740111cd107160ac311902658a48933e7b1272
+    digest: d29db16b56f0e620832debae4e99069293e267fbfce633dd59d8ceb97ff8f3d2
     home: https://github.com/1mr0-tech/logcloak
     keywords:
     - kubernetes
@@ -26,7 +26,7 @@ entries:
     version: 0.2.0
   - apiVersion: v2
     appVersion: 0.1.1
-    created: "2026-04-23T06:21:20.169211604Z"
+    created: "2026-04-23T06:40:51.290941656Z"
     description: Real-time Kubernetes pod log masker — redacts PII and OTP data before
       logs reach kubectl or storage
     digest: 2c9fedc694b577267cd1aaca3863f6b0c8fe8c3a368845c6bc66351a97ff59b2
@@ -49,7 +49,7 @@ entries:
     version: 0.1.1
   - apiVersion: v2
     appVersion: 0.1.0
-    created: "2026-04-23T06:21:20.168888988Z"
+    created: "2026-04-23T06:40:51.290633312Z"
     description: Real-time Kubernetes pod log masker — redacts PII and OTP data before
       logs reach kubectl or storage
     digest: 505fe14542ebe7f7f4ff702f675839a7b71268f2ba79a2c9ed05c8667372871a
@@ -70,4 +70,4 @@ entries:
     urls:
     - https://1mr0-tech.github.io/logcloak/logcloak-0.1.0.tgz
     version: 0.1.0
-generated: "2026-04-23T06:21:20.168284483Z"
+generated: "2026-04-23T06:40:51.289843361Z"
