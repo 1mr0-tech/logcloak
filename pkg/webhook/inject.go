@@ -18,6 +18,36 @@ const (
 	pipeMountDir = "/masker-pipe"
 )
 
+// knownProxies are service-mesh and infrastructure sidecar names that logcloak
+// should never wrap — they handle network traffic, not app stdout, and wrapping
+// them causes startup races and spurious log interception.
+var knownProxies = map[string]bool{
+	"istio-proxy":    true, // Istio
+	"linkerd-proxy":  true, // Linkerd
+	"envoy":          true, // AWS App Mesh / standalone Envoy
+	"envoy-sidecar":  true, // Consul Connect
+	"kuma-sidecar":   true, // Kuma
+	"consul-sidecar": true, // Consul
+	"vault-agent":    true, // Vault Agent Injector
+	"config-reloader": true, // common infrastructure sidecar
+}
+
+// isExcluded returns true if the container should not be wrapped by logcloak.
+// Checks knownProxies first, then the logcloak.io/exclude-containers annotation.
+func isExcluded(name string, annotations map[string]string) bool {
+	if name == sidecarName || knownProxies[name] {
+		return true
+	}
+	if exclude, ok := annotations["logcloak.io/exclude-containers"]; ok {
+		for _, e := range strings.Split(exclude, ",") {
+			if strings.TrimSpace(e) == name {
+				return true
+			}
+		}
+	}
+	return false
+}
+
 // BuildPatch returns JSON Patch ops that mutate a pod to inject the masker sidecar.
 // Returns an empty slice (no-op) if the pod has logcloak.io/skip=true.
 func BuildPatch(pod corev1.Pod, compiled []masker.Rule, sidecarImage string) ([]Op, error) {
@@ -73,7 +103,7 @@ func BuildPatch(pod corev1.Pod, compiled []masker.Rule, sidecarImage string) ([]
 	}
 
 	for i, c := range pod.Spec.Containers {
-		if c.Name == sidecarName {
+		if isExcluded(c.Name, pod.Annotations) {
 			continue
 		}
 		ops = append(ops, wrapEntrypoint(i, c)...)

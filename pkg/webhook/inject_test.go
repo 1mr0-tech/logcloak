@@ -88,6 +88,64 @@ func TestBuildPatch_WithRules(t *testing.T) {
 	}
 }
 
+func TestBuildPatch_DoesNotWrapIstioProxy(t *testing.T) {
+	p := corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{Name: "test", Namespace: "test"},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{Name: "app", Image: "myapp:latest", Command: []string{"app"}},
+				{Name: "istio-proxy", Image: "istio/proxyv2:1.20", Command: []string{"/usr/local/bin/pilot-agent"}},
+			},
+		},
+	}
+	ops, err := webhook.BuildPatch(p, nil, "ghcr.io/1mr0-tech/logcloak-sidecar:latest")
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := json.Marshal(ops)
+	s := string(b)
+	// app container must be wrapped
+	if !containsStr(s, "masker-pipe/app.pipe") {
+		t.Error("app container entrypoint should be redirected to FIFO")
+	}
+	// istio-proxy must NOT be wrapped (no replace op targeting containers/1)
+	if containsStr(s, "containers/1/command") {
+		t.Error("istio-proxy container should not have its entrypoint wrapped")
+	}
+}
+
+func TestBuildPatch_ExcludeContainersAnnotation(t *testing.T) {
+	p := corev1.Pod{
+		ObjectMeta: metav1.ObjectMeta{
+			Name:      "test",
+			Namespace: "test",
+			Annotations: map[string]string{
+				"logcloak.io/exclude-containers": "custom-proxy, monitoring-agent",
+			},
+		},
+		Spec: corev1.PodSpec{
+			Containers: []corev1.Container{
+				{Name: "app", Image: "myapp:latest", Command: []string{"app"}},
+				{Name: "custom-proxy", Image: "proxy:latest", Command: []string{"proxy"}},
+				{Name: "monitoring-agent", Image: "agent:latest", Command: []string{"agent"}},
+			},
+		},
+	}
+	ops, err := webhook.BuildPatch(p, nil, "ghcr.io/1mr0-tech/logcloak-sidecar:latest")
+	if err != nil {
+		t.Fatal(err)
+	}
+	b, _ := json.Marshal(ops)
+	s := string(b)
+	if !containsStr(s, "masker-pipe/app.pipe") {
+		t.Error("app container should be wrapped")
+	}
+	// containers/1 and containers/2 (custom-proxy, monitoring-agent) must not have command replaced
+	if containsStr(s, "containers/1/command") || containsStr(s, "containers/2/command") {
+		t.Error("excluded containers should not have entrypoints wrapped")
+	}
+}
+
 func containsStr(haystack, needle string) bool {
 	for i := 0; i <= len(haystack)-len(needle); i++ {
 		if haystack[i:i+len(needle)] == needle {
