@@ -6,7 +6,7 @@ metadata:
     app.kubernetes.io/name: logcloak
     app.kubernetes.io/managed-by: {{ .Release.Service }}
 webhooks:
-- name: logcloak.io
+- name: mutate.logcloak.io
   admissionReviewVersions: ["v1"]
   sideEffects: None
   failurePolicy: {{ .Values.webhook.failurePolicy }}
