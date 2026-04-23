@@ -105,6 +105,7 @@ jobs:
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
+        git stash
         git checkout -B gh-pages origin/gh-pages
         cp /tmp/helm-pkg/*.tgz .
         helm repo index . --url https://1mr0-tech.github.io/logcloak --merge index.yaml
