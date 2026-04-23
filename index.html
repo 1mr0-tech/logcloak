@@ -1,53 +1,198 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>logcloak — Kubernetes Log Masker</title>
-  <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; max-width: 760px; margin: 60px auto; padding: 0 24px; color: #24292f; }
-    h1 { font-size: 2rem; margin-bottom: 4px; }
-    .badge { display: inline-block; background: #0969da; color: white; border-radius: 4px; padding: 2px 10px; font-size: 0.8rem; margin-bottom: 24px; }
-    pre { background: #f6f8fa; border-radius: 6px; padding: 16px; overflow-x: auto; font-size: 0.9rem; }
-    code { background: #f6f8fa; border-radius: 3px; padding: 2px 6px; font-size: 0.9rem; }
-    h2 { border-bottom: 1px solid #d0d7de; padding-bottom: 8px; margin-top: 40px; }
-    a { color: #0969da; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin: 16px 0; }
-    .card { border: 1px solid #d0d7de; border-radius: 6px; padding: 16px; }
-    .card h3 { margin: 0 0 8px 0; font-size: 1rem; }
-    .card p { margin: 0; font-size: 0.9rem; color: #57606a; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>logcloak — Kubernetes Log Masker</title>
+<style>
+  :root { --bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--accent-dim:#1f6feb;--green:#3fb950;--purple:#bc8cff;--code-bg:#1c2128; }
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.6}
+  nav{position:sticky;top:0;z-index:100;background:rgba(13,17,23,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+  .nav-inner{max-width:1100px;margin:0 auto;padding:0 24px;height:56px;display:flex;align-items:center;gap:32px}
+  .nav-logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:1rem;color:var(--text);text-decoration:none}
+  .nav-logo svg{color:var(--accent)}
+  .nav-links{display:flex;gap:4px;margin-left:auto}
+  .nav-links a{color:var(--muted);text-decoration:none;font-size:.88rem;padding:6px 12px;border-radius:6px;transition:color .15s,background .15s}
+  .nav-links a:hover{color:var(--text);background:rgba(255,255,255,.06)}
+  .nav-links a.cur{color:var(--accent)}
+  .nav-cta{margin-left:8px;background:var(--accent-dim);color:#fff!important;border-radius:6px;font-weight:600}
+  .nav-cta:hover{background:var(--accent)!important;color:#000!important}
+  .hero{max-width:1100px;margin:0 auto;padding:96px 24px 80px;text-align:center}
+  .hero-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(31,111,235,.15);border:1px solid rgba(88,166,255,.2);color:var(--accent);border-radius:20px;padding:4px 14px;font-size:.78rem;font-weight:600;letter-spacing:.04em;margin-bottom:24px}
+  .hero h1{font-size:clamp(2.2rem,5vw,3.4rem);font-weight:800;letter-spacing:-.03em;line-height:1.15;margin-bottom:20px}
+  .hero h1 span{background:linear-gradient(135deg,var(--accent) 0%,var(--purple) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+  .hero-sub{font-size:1.15rem;color:var(--muted);max-width:600px;margin:0 auto 40px}
+  .hero-actions{display:flex;gap:12px;justify-content:center;flex-wrap:wrap}
+  .btn{display:inline-flex;align-items:center;gap:8px;padding:11px 22px;border-radius:8px;font-size:.9rem;font-weight:600;text-decoration:none;transition:all .15s;cursor:pointer;border:none}
+  .btn-primary{background:var(--accent);color:#000}
+  .btn-primary:hover{background:#79c0ff;transform:translateY(-1px)}
+  .btn-outline{background:transparent;color:var(--text);border:1px solid var(--border)}
+  .btn-outline:hover{border-color:var(--accent);color:var(--accent);background:rgba(88,166,255,.06)}
+  .install-box{max-width:720px;margin:56px auto 0;background:var(--code-bg);border:1px solid var(--border);border-radius:12px;overflow:hidden}
+  .install-header{display:flex;align-items:center;padding:12px 16px;border-bottom:1px solid var(--border);gap:6px}
+  .dot{width:12px;height:12px;border-radius:50%}
+  .dot-r{background:#ff5f57}.dot-y{background:#febc2e}.dot-g{background:#28c840}
+  .install-header span{margin-left:auto;font-size:.75rem;color:var(--muted)}
+  .install-code{padding:20px;font-family:"SFMono-Regular",Consolas,monospace;font-size:.85rem;line-height:1.8}
+  .dim{color:var(--muted)}.cmd{color:var(--green)}.flag{color:var(--accent)}.str{color:#f0883e}
+  section{max-width:1100px;margin:0 auto;padding:80px 24px}
+  .section-label{font-size:.78rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;margin-bottom:12px}
+  .section-title{font-size:clamp(1.6rem,3vw,2.2rem);font-weight:700;letter-spacing:-.02em;margin-bottom:16px}
+  .section-sub{color:var(--muted);font-size:1.05rem;max-width:560px;margin-bottom:48px}
+  .divider{border:none;border-top:1px solid var(--border)}
+  .flow{display:flex;align-items:center;gap:0;flex-wrap:wrap;justify-content:center;margin:40px 0}
+  .flow-step{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px 20px;min-width:130px;text-align:center}
+  .flow-step .icon{font-size:1.4rem;margin-bottom:6px}
+  .flow-step .label{font-size:.8rem;font-weight:600}
+  .flow-step .sub{font-size:.72rem;color:var(--muted);margin-top:2px}
+  .flow-arrow{color:var(--muted);font-size:1.2rem;padding:0 8px}
+  .flow-step.hl{border-color:var(--accent);background:rgba(88,166,255,.06)}
+  .flow-step.hl .label{color:var(--accent)}
+  .fg{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px}
+  .fc{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:24px;transition:border-color .15s}
+  .fc:hover{border-color:rgba(88,166,255,.4)}
+  .fi{width:40px;height:40px;border-radius:8px;display:flex;align-items:center;justify-content:center;margin-bottom:14px;font-size:1.2rem}
+  .fc h3{font-size:1rem;font-weight:600;margin-bottom:8px}
+  .fc p{font-size:.88rem;color:var(--muted);line-height:1.6}
+  .tw{overflow-x:auto}
+  table{width:100%;border-collapse:collapse;font-size:.88rem}
+  th{text-align:left;padding:10px 16px;color:var(--muted);font-weight:600;border-bottom:1px solid var(--border);font-size:.78rem;text-transform:uppercase;letter-spacing:.05em}
+  td{padding:12px 16px;border-bottom:1px solid rgba(48,54,61,.6)}
+  tr:last-child td{border-bottom:none}
+  tr:hover td{background:rgba(255,255,255,.02)}
+  code{font-family:"SFMono-Regular",Consolas,monospace;font-size:.82rem;background:var(--code-bg);border:1px solid var(--border);border-radius:4px;padding:2px 7px;color:var(--purple)}
+  .new{display:inline-block;background:rgba(63,185,80,.15);border:1px solid rgba(63,185,80,.3);color:var(--green);border-radius:4px;font-size:.68rem;font-weight:700;padding:1px 6px;margin-left:6px;letter-spacing:.03em;vertical-align:middle}
+  footer{border-top:1px solid var(--border);padding:40px 24px;text-align:center;color:var(--muted);font-size:.85rem}
+  footer a{color:var(--accent);text-decoration:none}
+  footer a:hover{text-decoration:underline}
+  @media(max-width:640px){.nav-links a:not(.nav-cta){display:none}.flow-arrow{display:none}.flow{gap:8px}}
+</style>
 </head>
 <body>
-  <h1>logcloak</h1>
-  <span class="badge">Helm Chart Repository</span>
-  <p>Real-time Kubernetes pod log masker. Redacts PII, OTPs, and tokens before logs reach <code>kubectl logs</code> or any storage backend.</p>
-
-  <h2>Install</h2>
-  <pre>helm repo add logcloak https://1mr0-tech.github.io/logcloak
-helm repo update
-helm install logcloak logcloak/logcloak \
-  --namespace logcloak \
-  --create-namespace</pre>
-
-  <h2>Opt in a namespace</h2>
-  <pre>kubectl label namespace &lt;your-namespace&gt; logcloak.io/inject=true</pre>
-
-  <h2>Add rules via annotation</h2>
-  <pre>metadata:
-  annotations:
-    logcloak.io/patterns: "email,otp-6digit,jwt"
-    logcloak.io/regex-order-id: "ORD-[0-9]{8}"</pre>
-
-  <div class="grid">
-    <div class="card">
-      <h3>Source Code</h3>
-      <p><a href="https://github.com/1mr0-tech/logcloak">github.com/1mr0-tech/logcloak</a></p>
-    </div>
-    <div class="card">
-      <h3>Helm Chart Index</h3>
-      <p><a href="./index.yaml">index.yaml</a></p>
+<nav>
+  <div class="nav-inner">
+    <a class="nav-logo" href="/logcloak/">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      logcloak
+    </a>
+    <div class="nav-links">
+      <a href="/logcloak/" class="cur">Home</a>
+      <a href="/logcloak/guide.html">Guide</a>
+      <a href="/logcloak/docs.html">Docs</a>
+      <a href="/logcloak/tool/">Pattern Tool</a>
+      <a href="https://github.com/1mr0-tech/logcloak" class="nav-cta">GitHub →</a>
     </div>
   </div>
+</nav>
+<div class="hero">
+  <div class="hero-badge">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+    Zero application code changes required
+  </div>
+  <h1>Real-time <span>log masking</span><br>for Kubernetes</h1>
+  <p class="hero-sub">Automatically redacts PII, OTPs, tokens, and sensitive data from pod logs before they reach <code style="background:rgba(255,255,255,.08);border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-family:monospace">kubectl logs</code> or any storage backend.</p>
+  <div class="hero-actions">
+    <a href="/logcloak/guide.html" class="btn btn-primary">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      Get Started
+    </a>
+    <a href="/logcloak/tool/" class="btn btn-outline">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/></svg>
+      Pattern Tool
+    </a>
+    <a href="https://github.com/1mr0-tech/logcloak" class="btn btn-outline">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.531 1.032 1.531 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0 1 12 6.844a9.59 9.59 0 0 1 2.504.337c1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.02 10.02 0 0 0 22 12.017C22 6.484 17.522 2 12 2z"/></svg>
+      GitHub
+    </a>
+  </div>
+  <div class="install-box">
+    <div class="install-header">
+      <div class="dot dot-r"></div><div class="dot dot-y"></div><div class="dot dot-g"></div>
+      <span>Quick install · Helm 3</span>
+    </div>
+    <div class="install-code">
+      <div><span class="dim"># Add the chart repository</span></div>
+      <div><span class="cmd">helm</span> repo add logcloak <span class="str">https://1mr0-tech.github.io/logcloak</span> <span class="dim">&amp;&amp;</span> <span class="cmd">helm</span> repo update</div>
+      <br>
+      <div><span class="dim"># Install</span></div>
+      <div><span class="cmd">helm</span> install logcloak logcloak/logcloak <span class="flag">--namespace</span> logcloak <span class="flag">--create-namespace</span></div>
+      <br>
+      <div><span class="dim"># Opt a namespace into masking</span></div>
+      <div><span class="cmd">kubectl</span> label namespace production <span class="str">logcloak.io/inject=true</span></div>
+    </div>
+  </div>
+</div>
+<hr class="divider">
+<section>
+  <div class="section-label">How it works</div>
+  <h2 class="section-title">Logs masked before they hit disk</h2>
+  <p class="section-sub">A sidecar sits between your app and the container runtime. Raw PII never reaches <code>/var/log/containers/</code>.</p>
+  <div class="flow">
+    <div class="flow-step"><div class="icon">📝</div><div class="label">App writes</div><div class="sub">stdout / stderr</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="icon">🔀</div><div class="label">FIFO pipe</div><div class="sub">in-memory only</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step hl"><div class="icon">🔒</div><div class="label">logcloak</div><div class="sub">masks PII here</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="icon">✅</div><div class="label">Clean stdout</div><div class="sub">kubectl logs</div></div>
+    <div class="flow-arrow">→</div>
+    <div class="flow-step"><div class="icon">💾</div><div class="label">Node disk</div><div class="sub">masked only</div></div>
+  </div>
+</section>
+<hr class="divider">
+<section>
+  <div class="section-label">Features</div>
+  <h2 class="section-title">Everything you need, nothing you don't</h2>
+  <p class="section-sub">Works on k3s, GKE, EKS, and AKS with a single Helm install.</p>
+  <div class="fg">
+    <div class="fc"><div class="fi" style="background:rgba(88,166,255,.12)">🛡️</div><h3>Zero-config TLS</h3><p>Self-signed certificate generated automatically on first install. CA bundle patched into the webhook configuration with no manual setup.</p></div>
+    <div class="fc"><div class="fi" style="background:rgba(63,185,80,.12)">⚡</div><h3>No latency impact</h3><p>Apps write to a kernel FIFO — identical to any file descriptor write. Masking is asynchronous. The app never blocks waiting for masking.</p></div>
+    <div class="fc"><div class="fi" style="background:rgba(188,140,255,.12)">🎯</div><h3>Two-tier rule system</h3><p><strong>MaskingPolicy</strong> CRD for platform-wide baselines. Pod <strong>annotations</strong> for per-service extensions. Annotations always extend, never override.</p></div>
+    <div class="fc"><div class="fi" style="background:rgba(248,81,73,.12)">🔐</div><h3>Fail-closed</h3><p>If a line cannot be processed, it is dropped and a <code>[LOGCLOAK-DROP]</code> sentinel is written. Raw PII never leaks on masker failure.</p></div>
+    <div class="fc"><div class="fi" style="background:rgba(210,153,34,.12)">🌍</div><h3>RE2-safe patterns</h3><p>Only RE2-compatible regex allowed — linear time, immune to ReDoS. Unsafe patterns are rejected at pod admission before the app starts.</p></div>
+    <div class="fc"><div class="fi" style="background:rgba(88,166,255,.12)">📊</div><h3>Prometheus metrics</h3><p>Built-in counters for lines processed, masked, and dropped, plus per-line latency histograms. Scrape on <code>:9090/metrics</code>.</p></div>
+  </div>
+</section>
+<hr class="divider">
+<section>
+  <div class="section-label">Built-in patterns</div>
+  <h2 class="section-title">10 global patterns, ready to use</h2>
+  <p class="section-sub">Enable any pattern by name in your MaskingPolicy or pod annotation. No regex writing required.</p>
+  <div class="tw">
+    <table>
+      <thead><tr><th>Name</th><th>Matches</th><th>Example</th></tr></thead>
+      <tbody>
+        <tr><td><code>email</code></td><td>RFC 5321 email addresses</td><td>user@example.com</td></tr>
+        <tr><td><code>phone-e164</code></td><td>E.164 international phone numbers</td><td>+12025550104</td></tr>
+        <tr><td><code>phone-us</code></td><td>US phone number formats</td><td>(202) 555-0104</td></tr>
+        <tr><td><code>otp-6digit</code></td><td>Standalone 6-digit OTP codes</td><td>847291</td></tr>
+        <tr><td><code>credit-card</code></td><td>13–19 digit card numbers</td><td>4111 1111 1111 1111</td></tr>
+        <tr><td><code>jwt</code></td><td>eyJ… JWT tokens</td><td>eyJhbGci…</td></tr>
+        <tr><td><code>ipv4-private</code></td><td>RFC 1918 private IPv4 addresses</td><td>192.168.1.100</td></tr>
+        <tr><td><code>uuid</code></td><td>UUID v4</td><td>550e8400-e29b-41d4-…</td></tr>
+        <tr><td><code>iban</code> <span class="new">NEW</span></td><td>International Bank Account Numbers</td><td>GB29NWBK60161331926819</td></tr>
+        <tr><td><code>ssn</code> <span class="new">NEW</span></td><td>US Social Security Numbers</td><td>123-45-6789</td></tr>
+      </tbody>
+    </table>
+  </div>
+</section>
+<hr class="divider">
+<section style="text-align:center;padding:64px 24px">
+  <h2 class="section-title" style="margin-bottom:12px">Ready to protect your logs?</h2>
+  <p style="color:var(--muted);margin-bottom:32px">One Helm install. No code changes. Works on any Kubernetes cluster.</p>
+  <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
+    <a href="/logcloak/guide.html" class="btn btn-primary">Read the hands-on guide</a>
+    <a href="/logcloak/tool/" class="btn btn-outline">Generate your patterns</a>
+  </div>
+</section>
+<footer>
+  <p>logcloak is open source under the MIT licence &nbsp;·&nbsp;
+  <a href="https://github.com/1mr0-tech/logcloak">GitHub</a> &nbsp;·&nbsp;
+  <a href="/logcloak/guide.html">Guide</a> &nbsp;·&nbsp;
+  <a href="/logcloak/docs.html">Docs</a> &nbsp;·&nbsp;
+  <a href="/logcloak/tool/">Pattern Tool</a></p>
+</footer>
 </body>
 </html>

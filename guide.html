@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>logcloak — Hands-On Guide</title>
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/highlight.min.js"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/highlightjs/cdn-release@11.9.0/build/styles/github-dark.min.css">
+<style>
+  :root{--bg:#0d1117;--surface:#161b22;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--accent-dim:#1f6feb;--green:#3fb950;--purple:#bc8cff;--code-bg:#1c2128}
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.7}
+  nav{position:sticky;top:0;z-index:100;background:rgba(13,17,23,.92);backdrop-filter:blur(12px);border-bottom:1px solid var(--border)}
+  .nav-inner{max-width:1100px;margin:0 auto;padding:0 24px;height:56px;display:flex;align-items:center;gap:32px}
+  .nav-logo{display:flex;align-items:center;gap:8px;font-weight:700;font-size:1rem;color:var(--text);text-decoration:none}
+  .nav-logo svg{color:var(--accent)}
+  .nav-links{display:flex;gap:4px;margin-left:auto}
+  .nav-links a{color:var(--muted);text-decoration:none;font-size:.88rem;padding:6px 12px;border-radius:6px;transition:color .15s,background .15s}
+  .nav-links a:hover{color:var(--text);background:rgba(255,255,255,.06)}
+  .nav-links a.cur{color:var(--accent)}
+  .nav-cta{margin-left:8px;background:var(--accent-dim);color:#fff!important;border-radius:6px;font-weight:600}
+  .nav-cta:hover{background:var(--accent)!important;color:#000!important}
+  .page{max-width:820px;margin:0 auto;padding:48px 24px 80px}
+  .page-header{margin-bottom:40px;padding-bottom:24px;border-bottom:1px solid var(--border)}
+  .page-header .label{font-size:.78rem;font-weight:700;color:var(--accent);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px}
+  .page-header h1{font-size:2rem;font-weight:800;letter-spacing:-.03em}
+  .page-header p{color:var(--muted);margin-top:8px}
+  #content h1,#content h2,#content h3,#content h4{font-weight:700;letter-spacing:-.02em;margin:2rem 0 .75rem;line-height:1.3}
+  #content h1{font-size:1.8rem;border-bottom:1px solid var(--border);padding-bottom:.5rem}
+  #content h2{font-size:1.4rem;border-bottom:1px solid var(--border);padding-bottom:.4rem}
+  #content h3{font-size:1.1rem}
+  #content p{margin-bottom:1rem;color:var(--text)}
+  #content ul,#content ol{margin:0 0 1rem 1.5rem}
+  #content li{margin-bottom:.3rem}
+  #content code{font-family:"SFMono-Regular",Consolas,monospace;font-size:.82rem;background:var(--code-bg);border:1px solid var(--border);border-radius:4px;padding:2px 7px;color:var(--purple)}
+  #content pre{margin:1rem 0;border-radius:8px;overflow:hidden;border:1px solid var(--border)}
+  #content pre code{background:none;border:none;padding:0;font-size:.82rem;color:inherit}
+  #content blockquote{border-left:3px solid var(--accent);padding:.5rem 1rem;margin:1rem 0;background:rgba(88,166,255,.05);border-radius:0 6px 6px 0;color:var(--muted)}
+  #content table{width:100%;border-collapse:collapse;margin:1rem 0;font-size:.88rem}
+  #content th{text-align:left;padding:10px 14px;color:var(--muted);font-size:.78rem;text-transform:uppercase;letter-spacing:.05em;border-bottom:1px solid var(--border)}
+  #content td{padding:10px 14px;border-bottom:1px solid rgba(48,54,61,.5)}
+  #content tr:hover td{background:rgba(255,255,255,.02)}
+  #content a{color:var(--accent);text-decoration:none}
+  #content a:hover{text-decoration:underline}
+  #content hr{border:none;border-top:1px solid var(--border);margin:2rem 0}
+  #content strong{color:var(--text);font-weight:600}
+  .loading{text-align:center;padding:80px;color:var(--muted)}
+  footer{border-top:1px solid var(--border);padding:32px 24px;text-align:center;color:var(--muted);font-size:.85rem}
+  footer a{color:var(--accent);text-decoration:none}
+  @media(max-width:640px){.nav-links a:not(.nav-cta){display:none}}
+</style>
+</head>
+<body>
+<nav>
+  <div class="nav-inner">
+    <a class="nav-logo" href="/logcloak/">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      logcloak
+    </a>
+    <div class="nav-links">
+      <a href="/logcloak/">Home</a>
+      <a href="/logcloak/guide.html" class="cur">Guide</a>
+      <a href="/logcloak/docs.html">Docs</a>
+      <a href="/logcloak/tool/">Pattern Tool</a>
+      <a href="https://github.com/1mr0-tech/logcloak" class="nav-cta">GitHub →</a>
+    </div>
+  </div>
+</nav>
+<div class="page">
+  <div class="page-header">
+    <div class="label">Hands-On Guide</div>
+    <h1>From install to masked logs</h1>
+    <p>Complete walkthrough with real commands and real output from a live cluster.</p>
+  </div>
+  <div id="content"><div class="loading">Loading guide…</div></div>
+</div>
+<footer>
+  <p><a href="/logcloak/">Home</a> &nbsp;·&nbsp; <a href="/logcloak/docs.html">Docs</a> &nbsp;·&nbsp; <a href="/logcloak/tool/">Pattern Tool</a> &nbsp;·&nbsp; <a href="https://github.com/1mr0-tech/logcloak">GitHub</a></p>
+</footer>
+<script>
+  marked.setOptions({ gfm: true, breaks: false });
+  fetch('https://raw.githubusercontent.com/1mr0-tech/logcloak/main/GUIDE.md')
+    .then(r => r.text())
+    .then(md => {
+      document.getElementById('content').innerHTML = marked.parse(md);
+      document.querySelectorAll('pre code').forEach(el => hljs.highlightElement(el));
+    })
+    .catch(() => {
+      document.getElementById('content').innerHTML = '<p style="color:var(--muted)">Could not load guide. <a href="https://github.com/1mr0-tech/logcloak/blob/main/GUIDE.md">View on GitHub</a></p>';
+    });
+</script>
+</body>
+</html>
