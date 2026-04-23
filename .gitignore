@@ -2,6 +2,7 @@
 *.md
 !documentation.md
 !README.md
+!GUIDE.md
 docs/
 .claude/
 .worktrees/
