@@ -147,13 +147,6 @@ footer .sep{margin:0 8px;opacity:.3}
 </nav>
 
 <div class="hero">
-  <pre class="logo-ascii">&#x2591;&#x2588;&#x2588;                                 &#x2591;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;  &#x2591;&#x2588;&#x2588;                       &#x2591;&#x2588;&#x2588;
-&#x2591;&#x2588;&#x2588;                                &#x2591;&#x2588;&#x2588;   &#x2591;&#x2588;&#x2588; &#x2591;&#x2588;&#x2588;                       &#x2591;&#x2588;&#x2588;
-&#x2591;&#x2588;&#x2588;          &#x2591;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;   &#x2591;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588; &#x2591;&#x2588;&#x2588;        &#x2591;&#x2588;&#x2588;  &#x2591;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;   &#x2591;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;   &#x2591;&#x2588;&#x2588;    &#x2591;&#x2588;&#x2588;
-&#x2591;&#x2588;&#x2588;         &#x2591;&#x2588;&#x2588;    &#x2591;&#x2588;&#x2588; &#x2591;&#x2588;&#x2588;    &#x2591;&#x2588;&#x2588; &#x2591;&#x2588;&#x2588;        &#x2591;&#x2588;&#x2588; &#x2591;&#x2588;&#x2588;    &#x2591;&#x2588;&#x2588;       &#x2591;&#x2588;&#x2588;  &#x2591;&#x2588;&#x2588;   &#x2591;&#x2588;&#x2588;
-&#x2591;&#x2588;&#x2588;         &#x2591;&#x2588;&#x2588;    &#x2591;&#x2588;&#x2588; &#x2591;&#x2588;&#x2588;    &#x2591;&#x2588;&#x2588; &#x2591;&#x2588;&#x2588;        &#x2591;&#x2588;&#x2588; &#x2591;&#x2588;&#x2588;    &#x2591;&#x2588;&#x2588;  &#x2591;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;  &#x2591;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;
-&#x2591;&#x2588;&#x2588;         &#x2591;&#x2588;&#x2588;    &#x2591;&#x2588;&#x2588; &#x2591;&#x2588;&#x2588;   &#x2591;&#x2588;&#x2588;&#x2588;  &#x2591;&#x2588;&#x2588;   &#x2591;&#x2588;&#x2588; &#x2591;&#x2588;&#x2588; &#x2591;&#x2588;&#x2588;    &#x2591;&#x2588;&#x2588; &#x2591;&#x2588;&#x2588;   &#x2591;&#x2588;&#x2588;  &#x2591;&#x2588;&#x2588;   &#x2591;&#x2588;&#x2588;
-&#x2591;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;  &#x2591;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;   &#x2591;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2591;&#x2588;&#x2588;   &#x2591;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;  &#x2591;&#x2588;&#x2588;  &#x2591;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;   &#x2591;&#x2588;&#x2588;&#x2588;&#x2588;&#x2588;&#x2591;&#x2588;&#x2588; &#x2591;&#x2588;&#x2588;    &#x2591;&#x2588;&#x2588;</pre>
   <h1>
     <span class="strike">kubectl logs</span><br>
     <span class="good">kubectl logs</span> without the panic
@@ -209,48 +202,41 @@ footer .sep{margin:0 8px;opacity:.3}
 <section class="sec">
   <p class="sec-tag">The problem</p>
   <h2 class="sec-title">Your logs are the gap in your security model</h2>
-  <p class="sec-sub">Most teams lock down their database with encrypted connections, strict RBAC, and audit logging — then ship the same plaintext data out through every log pipeline they operate.</p>
 
-  <div class="problem-layout">
-    <div class="problem-left">
-      <p style="color:var(--muted);line-height:1.8;margin-bottom:1.2rem">
-        A developer adds one debug line: <code>log.info("order for {}", user.email)</code>.
-        That line ends up in Datadog, Elasticsearch, an S3 bucket, your SIEM, and six
-        terminals belonging to people who were only supposed to see latency metrics.
-        Nobody notices. This is the default state of most Kubernetes deployments.
-      </p>
-      <p style="color:var(--muted);line-height:1.8">
-        logcloak intercepts at the source — before the container runtime captures a single byte —
-        so none of those downstream systems ever receive the raw data.
-      </p>
+  <p class="prob-intro">
+    Most teams lock down their database with encrypted connections, strict RBAC, and audit logging —
+    then ship the same plaintext data out through every log pipeline they operate.
+    A developer adds one debug line: <code>log.info("order for {}", user.email)</code>.
+    That line ends up in Datadog, Elasticsearch, an S3 bucket, your SIEM, and six terminals
+    belonging to people who were only supposed to see latency metrics. Nobody notices.
+    This is the default state of most Kubernetes deployments.
+  </p>
 
-      <div class="callout">
-        <div class="callout-head">&#x201C;But anyone with kubectl exec can see everything anyway&#x201D;</div>
-        <p>
-          True — and that&#x2019;s a separate control. <code>kubectl exec</code> requires explicit RBAC
-          that is typically restricted in production, heavily audited, and often disabled entirely.
-          <code>kubectl logs</code> access is handed out far more broadly: developers, support teams,
-          CI pipelines, log agents. logcloak defends the log surface. RBAC defends exec.
-          Use both.
-        </p>
-      </div>
-    </div>
+  <div class="callout">
+    <div class="callout-head">&#x201C;But anyone with kubectl exec can see everything anyway&#x201D;</div>
+    <p>
+      True — and that is a separate control. <code>kubectl exec</code> requires explicit RBAC that is
+      typically restricted, audited, and often disabled in production.
+      <code>kubectl logs</code> is handed out far more broadly — to developers, support teams,
+      CI pipelines, and log agents.
+      logcloak defends the log surface. RBAC defends exec. Use both.
+    </p>
+  </div>
 
-    <div class="problem-right">
-      <div class="leak-table-title">Where PII leaks &amp; whether logcloak stops it</div>
-      <table class="leak-table">
-        <tbody>
-          <tr><td class="leak-src">kubectl logs in a developer&#x2019;s terminal</td><td class="stop yes">&#x2713; stopped</td></tr>
-          <tr><td class="leak-src">/var/log/containers/ on the node</td><td class="stop yes">&#x2713; stopped</td></tr>
-          <tr><td class="leak-src">Log shippers (Fluent Bit, Fluentd, Promtail)</td><td class="stop yes">&#x2713; stopped</td></tr>
-          <tr><td class="leak-src">Third-party platforms (Datadog, Splunk, Elastic)</td><td class="stop yes">&#x2713; stopped</td></tr>
-          <tr><td class="leak-src">S3 / GCS log archives</td><td class="stop yes">&#x2713; stopped</td></tr>
-          <tr><td class="leak-src">CI/CD pipelines that capture stdout</td><td class="stop yes">&#x2713; stopped</td></tr>
-          <tr class="oos"><td class="leak-src">kubectl exec into a running container</td><td class="stop no">out of scope &mdash; use RBAC</td></tr>
-          <tr class="oos"><td class="leak-src">Application memory / heap dumps</td><td class="stop no">out of scope</td></tr>
-        </tbody>
-      </table>
-    </div>
+  <div class="leak-wrap">
+    <div class="leak-table-title">Where PII leaks &amp; whether logcloak stops it</div>
+    <table class="leak-table">
+      <tbody>
+        <tr><td class="leak-src"><code>kubectl logs</code> in a developer&#x2019;s terminal</td><td class="stop yes">&#x2713; stopped</td></tr>
+        <tr><td class="leak-src"><code>/var/log/containers/</code> on the node</td><td class="stop yes">&#x2713; stopped</td></tr>
+        <tr><td class="leak-src">Log shippers (Fluent Bit, Fluentd, Promtail)</td><td class="stop yes">&#x2713; stopped</td></tr>
+        <tr><td class="leak-src">Third-party platforms (Datadog, Splunk, Elastic)</td><td class="stop yes">&#x2713; stopped</td></tr>
+        <tr><td class="leak-src">S3 / GCS log archives</td><td class="stop yes">&#x2713; stopped</td></tr>
+        <tr><td class="leak-src">CI/CD pipelines that capture stdout</td><td class="stop yes">&#x2713; stopped</td></tr>
+        <tr class="oos"><td class="leak-src"><code>kubectl exec</code> into a running container</td><td class="stop no">out of scope — use RBAC</td></tr>
+        <tr class="oos"><td class="leak-src">Application memory / heap dumps</td><td class="stop no">out of scope</td></tr>
+      </tbody>
+    </table>
   </div>
 </section>
 
