@@ -85,7 +85,9 @@ jobs:
       with:
         fetch-depth: 0
 
-    - uses: azure/setup-helm@v4
+    - name: Install Helm
+      run: |
+        curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
     - name: Extract version
       id: version
@@ -103,12 +105,11 @@ jobs:
       run: |
         git config user.name "github-actions[bot]"
         git config user.email "github-actions[bot]@users.noreply.github.com"
-        git fetch origin gh-pages
-        git checkout gh-pages
+        git checkout -B gh-pages origin/gh-pages
         cp /tmp/helm-pkg/*.tgz .
-        helm repo index . --url https://1mr0-tech.github.io/logcloak
+        helm repo index . --url https://1mr0-tech.github.io/logcloak --merge index.yaml
         git add *.tgz index.yaml
-        git commit -m "release: logcloak-${{ steps.version.outputs.VERSION }}" || echo "nothing to commit"
+        git diff --cached --quiet && echo "nothing to commit" || git commit -m "release: logcloak-${{ steps.version.outputs.VERSION }}"
         git push origin gh-pages
 
   github-release:
