@@ -230,8 +230,9 @@ pii-baseline   5s
 | `jwt` | eyJ… JWT tokens |
 | `ipv4-private` | RFC 1918 private IP addresses |
 | `uuid` | UUID v4 |
-| `aadhaar` | 12-digit Aadhaar numbers |
-| `pan-in` | Indian PAN card format |
+| `iban` | International Bank Account Numbers (all countries) |
+| `ssn` | US Social Security Numbers (XXX-XX-XXXX) |
+| `phone-e164` | E.164 international phone (+12025550104) |
 
 ### Targeting specific services with a selector
 
@@ -431,7 +432,45 @@ The pod is blocked before it starts.
 
 ---
 
-## Step 9 — kubectl logs behaviour reference
+## Step 9 — Service mesh and non-standard sidecars
+
+logcloak is safe alongside Istio, Linkerd, and any other service mesh. Meshes intercept network traffic at the kernel level — logcloak intercepts stdout. They don't cross paths.
+
+### Automatically skipped containers
+
+These are never wrapped regardless of what you configure:
+
+`istio-proxy` · `linkerd-proxy` · `envoy` · `envoy-sidecar` · `kuma-sidecar` · `consul-sidecar` · `vault-agent` · `config-reloader`
+
+### Excluding non-standard sidecars
+
+Got a postgres sidecar? A redis container? A monitoring agent? Tell logcloak to leave them alone:
+
+```yaml
+metadata:
+  annotations:
+    logcloak.io/exclude-containers: "postgres,redis,datadog-agent"
+```
+
+Full example — three containers, only `app` gets wrapped:
+
+```yaml
+metadata:
+  annotations:
+    logcloak.io/exclude-containers: "postgres"
+spec:
+  containers:
+  - name: app        # ← logcloak wraps this one
+    image: myapp:latest
+  - name: postgres   # ← excluded via annotation
+    image: postgres:16
+  - name: istio-proxy  # ← excluded automatically
+    image: istio/proxyv2:1.20
+```
+
+---
+
+## Step 10 — kubectl logs behaviour reference
 
 | Command | What you see |
 |---|---|

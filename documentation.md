@@ -122,16 +122,16 @@ Enable these by name in `MaskingPolicy.spec.patterns[].builtin` or in the `logcl
 
 | Name | What it matches |
 |---|---|
-| `email` | Email addresses |
-| `phone-in` | Indian mobile numbers (10-digit, +91 variants) |
-| `phone-us` | US phone numbers |
+| `email` | RFC 5321 email addresses |
+| `phone-e164` | E.164 international phone numbers (+12025550104) |
+| `phone-us` | US phone number formats |
 | `otp-6digit` | Standalone 6-digit numeric OTP codes |
 | `credit-card` | 13–19 digit card numbers |
 | `jwt` | JWT tokens (`eyJ...`) |
 | `ipv4-private` | RFC 1918 private IP addresses |
 | `uuid` | UUID v4 |
-| `aadhaar` | 12-digit Aadhaar numbers |
-| `pan-in` | Indian PAN card format |
+| `iban` | International Bank Account Numbers (all countries) |
+| `ssn` | US Social Security Numbers (XXX-XX-XXXX) |
 
 ---
 
@@ -182,6 +182,54 @@ To exclude a specific pod from injection even in an opted-in namespace:
 metadata:
   annotations:
     logcloak.io/skip: "true"
+```
+
+---
+
+## Service mesh and sidecar compatibility
+
+logcloak is safe to run alongside Istio, Linkerd, Consul Connect, AWS App Mesh, and Kuma. Service meshes intercept network traffic at the socket/iptables layer — entirely separate from stdout — so there is no functional conflict.
+
+### Automatically skipped containers
+
+logcloak never wraps these containers regardless of the pod spec:
+
+| Container name | Service mesh / tool |
+|---|---|
+| `istio-proxy` | Istio |
+| `linkerd-proxy` | Linkerd |
+| `envoy` | AWS App Mesh, standalone Envoy |
+| `envoy-sidecar` | Consul Connect |
+| `kuma-sidecar` | Kuma |
+| `consul-sidecar` | Consul |
+| `vault-agent` | Vault Agent Injector |
+| `config-reloader` | Common infrastructure pattern |
+
+### Excluding non-standard sidecars
+
+For sidecars not in the list above — a postgres container, a redis sidecar, a monitoring agent — use the `logcloak.io/exclude-containers` annotation:
+
+```yaml
+metadata:
+  annotations:
+    logcloak.io/exclude-containers: "postgres,redis,datadog-agent"
+```
+
+Comma-separated. Spaces around names are fine. Only the listed containers are excluded — all other app containers are still wrapped.
+
+```yaml
+# Example: app with a postgres sidecar and Istio
+metadata:
+  annotations:
+    logcloak.io/exclude-containers: "postgres"
+spec:
+  containers:
+  - name: app          # wrapped by logcloak ✓
+    image: myapp:latest
+  - name: postgres     # excluded via annotation ✓
+    image: postgres:16
+  - name: istio-proxy  # excluded automatically ✓
+    image: istio/proxyv2:1.20
 ```
 
 ---
