@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>logcloak — Pattern Helper</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f6f8fa; color: #24292f; min-height: 100vh; }
+  header { background: #24292f; color: #fff; padding: 14px 24px; display: flex; align-items: center; gap: 12px; }
+  header h1 { font-size: 1.1rem; font-weight: 600; }
+  header a { color: #8b949e; font-size: 0.85rem; text-decoration: none; margin-left: auto; }
+  header a:hover { color: #fff; }
+  .layout { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding: 16px; max-width: 1280px; margin: 0 auto; }
+  @media (max-width: 800px) { .layout { grid-template-columns: 1fr; } }
+  .panel { background: #fff; border: 1px solid #d0d7de; border-radius: 8px; padding: 20px; }
+  .panel h2 { font-size: 0.85rem; font-weight: 600; color: #57606a; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 16px; }
+  label { display: block; font-size: 0.9rem; margin-bottom: 4px; font-weight: 500; }
+  textarea, input[type=text] { width: 100%; border: 1px solid #d0d7de; border-radius: 6px; padding: 8px 10px; font-size: 0.88rem; font-family: "SFMono-Regular", Consolas, monospace; background: #f6f8fa; color: #24292f; resize: vertical; }
+  textarea:focus, input[type=text]:focus { outline: none; border-color: #0969da; box-shadow: 0 0 0 3px rgba(9,105,218,.15); background: #fff; }
+  textarea { min-height: 72px; }
+  .section { margin-top: 20px; }
+  .section-title { font-size: 0.82rem; font-weight: 600; color: #57606a; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 10px; border-bottom: 1px solid #f0f0f0; padding-bottom: 6px; }
+  .pattern-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; }
+  .pattern-item { display: flex; align-items: flex-start; gap: 8px; padding: 7px 8px; border: 1px solid #e8ecf0; border-radius: 6px; cursor: pointer; transition: background .1s; }
+  .pattern-item:hover { background: #f6f8fa; }
+  .pattern-item input[type=checkbox] { margin-top: 2px; accent-color: #0969da; flex-shrink: 0; }
+  .pattern-item .pname { font-size: 0.85rem; font-weight: 600; display: block; }
+  .pattern-item .pdesc { font-size: 0.75rem; color: #57606a; display: block; margin-top: 1px; }
+  .target-row { display: flex; gap: 12px; margin-top: 8px; }
+  .target-option { display: flex; align-items: center; gap: 6px; padding: 8px 14px; border: 1px solid #d0d7de; border-radius: 6px; cursor: pointer; font-size: 0.88rem; flex: 1; justify-content: center; transition: border-color .1s, background .1s; }
+  .target-option.active { border-color: #0969da; background: #ddf4ff; font-weight: 600; color: #0969da; }
+  .custom-block { border: 1px solid #d0d7de; border-radius: 6px; padding: 12px; margin-top: 8px; background: #fafbfc; }
+  .custom-block + .custom-block { margin-top: 8px; }
+  .custom-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .custom-header span { font-size: 0.82rem; font-weight: 600; color: #57606a; }
+  .remove-btn { background: none; border: none; color: #cf222e; cursor: pointer; font-size: 0.8rem; padding: 2px 6px; border-radius: 4px; }
+  .remove-btn:hover { background: #ffebe9; }
+  .tabs { display: flex; gap: 0; margin-bottom: 10px; border: 1px solid #d0d7de; border-radius: 6px; overflow: hidden; }
+  .tab { flex: 1; padding: 6px; font-size: 0.8rem; text-align: center; cursor: pointer; background: #f6f8fa; border: none; color: #57606a; transition: background .1s; }
+  .tab.active { background: #fff; color: #24292f; font-weight: 600; }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .validation { font-size: 0.75rem; margin-top: 4px; padding: 4px 8px; border-radius: 4px; display: none; }
+  .validation.ok { background: #dafbe1; color: #116329; display: block; }
+  .validation.err { background: #ffebe9; color: #cf222e; display: block; }
+  .add-btn { width: 100%; margin-top: 10px; padding: 8px; border: 1px dashed #d0d7de; border-radius: 6px; background: none; cursor: pointer; font-size: 0.85rem; color: #0969da; transition: background .1s; }
+  .add-btn:hover { background: #f0f7ff; }
+  /* output */
+  .output-block { margin-top: 16px; }
+  .output-block:first-child { margin-top: 0; }
+  .output-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .output-label { font-size: 0.8rem; font-weight: 600; color: #57606a; text-transform: uppercase; letter-spacing: 0.04em; }
+  .copy-btn { font-size: 0.75rem; padding: 3px 10px; border: 1px solid #d0d7de; border-radius: 4px; background: #f6f8fa; cursor: pointer; color: #24292f; transition: background .1s; }
+  .copy-btn:hover { background: #e8ecf0; }
+  .copy-btn.copied { background: #dafbe1; border-color: #4ac26b; color: #116329; }
+  pre.output { background: #f6f8fa; border: 1px solid #e8ecf0; border-radius: 6px; padding: 12px; font-size: 0.8rem; font-family: "SFMono-Regular", Consolas, monospace; overflow-x: auto; white-space: pre-wrap; word-break: break-all; color: #24292f; min-height: 40px; }
+  .preview-line { font-size: 0.88rem; font-family: "SFMono-Regular", Consolas, monospace; padding: 12px; background: #f6f8fa; border: 1px solid #e8ecf0; border-radius: 6px; min-height: 44px; word-break: break-all; line-height: 1.6; }
+  .preview-line .match { background: #fff3b0; border-radius: 3px; padding: 0 2px; }
+  .redacted { color: #cf222e; font-weight: 600; }
+  .empty-state { color: #8b949e; font-size: 0.85rem; font-style: italic; }
+  .ns-row { display: flex; gap: 8px; align-items: flex-end; margin-top: 8px; }
+  .ns-row input { flex: 1; }
+  .suggest-row { display: flex; gap: 6px; margin-top: 6px; }
+  .suggest-row input { flex: 1; }
+  .suggest-btn { padding: 7px 12px; background: #0969da; color: #fff; border: none; border-radius: 6px; cursor: pointer; font-size: 0.82rem; white-space: nowrap; }
+  .suggest-btn:hover { background: #0860ca; }
+</style>
+</head>
+<body>
+
+<header>
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#58a6ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+  <h1>logcloak — Pattern Helper</h1>
+  <a href="https://1mr0-tech.github.io/logcloak">← Helm chart</a>
+</header>
+
+<div class="layout">
+
+  <!-- LEFT: INPUTS -->
+  <div class="panel">
+    <h2>Configure Patterns</h2>
+
+    <label for="sampleLog">Sample log line</label>
+    <textarea id="sampleLog" placeholder="Paste a real log line here to see live masking preview…" oninput="updateAll()"></textarea>
+
+    <div class="section">
+      <div class="section-title">Built-in Patterns</div>
+      <div class="pattern-grid" id="builtinGrid"></div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Custom Patterns</div>
+      <div id="customList"></div>
+      <button class="add-btn" onclick="addCustom()">+ Add custom pattern</button>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Namespace</div>
+      <div class="ns-row">
+        <div style="flex:1">
+          <label for="nsName">Namespace name</label>
+          <input type="text" id="nsName" placeholder="my-namespace" oninput="updateAll()">
+        </div>
+      </div>
+    </div>
+
+    <div class="section">
+      <div class="section-title">Deployment Target</div>
+      <div class="target-row">
+        <div class="target-option active" id="tgt-policy" onclick="setTarget('policy')">
+          <span>MaskingPolicy</span>
+          <span style="font-size:0.72rem;color:#57606a;margin-left:4px;font-weight:400">(platform team)</span>
+        </div>
+        <div class="target-option" id="tgt-annotation" onclick="setTarget('annotation')">
+          <span>Pod Annotation</span>
+          <span style="font-size:0.72rem;color:#57606a;margin-left:4px;font-weight:400">(developer)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RIGHT: OUTPUTS -->
+  <div class="panel">
+    <h2>Generated Output</h2>
+
+    <div class="output-block">
+      <div class="output-header">
+        <span class="output-label">Live Preview</span>
+      </div>
+      <div class="preview-line" id="previewLine"><span class="empty-state">Paste a log line on the left to see masked output here.</span></div>
+    </div>
+
+    <div class="output-block" style="margin-top:20px">
+      <div class="output-header">
+        <span class="output-label">Regex Patterns</span>
+        <button class="copy-btn" onclick="copyBlock('regexOut', this)">Copy</button>
+      </div>
+      <pre class="output" id="regexOut"># Select patterns on the left</pre>
+    </div>
+
+    <div class="output-block">
+      <div class="output-header">
+        <span class="output-label" id="yamlLabel">MaskingPolicy YAML</span>
+        <button class="copy-btn" onclick="copyBlock('yamlOut', this)">Copy</button>
+      </div>
+      <pre class="output" id="yamlOut"># Select patterns on the left</pre>
+    </div>
+
+    <div class="output-block">
+      <div class="output-header">
+        <span class="output-label">Namespace Label</span>
+        <button class="copy-btn" onclick="copyBlock('labelOut', this)">Copy</button>
+      </div>
+      <pre class="output" id="labelOut">kubectl label namespace &lt;name&gt; logcloak.io/inject=true</pre>
+    </div>
+
+    <div class="output-block">
+      <div class="output-header">
+        <span class="output-label">Steps</span>
+      </div>
+      <pre class="output" id="stepsOut" style="background:#fffbdd;border-color:#d4a800;color:#4a3800"></pre>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const BUILTINS = [
+  { name: 'email',        label: 'Email',           desc: 'RFC 5321 email addresses',          pattern: '[a-zA-Z0-9._%+\\-]+@[a-zA-Z0-9.\\-]+\\.[a-zA-Z]{2,}' },
+  { name: 'phone-in',     label: 'Phone (India)',    desc: 'Indian mobile (+91 variants)',       pattern: '(\\+91[\\-\\s]?)?[6-9]\\d{9}' },
+  { name: 'phone-us',     label: 'Phone (US)',       desc: 'US phone numbers',                  pattern: '(\\+1[\\-\\s]?)?\\(?\\d{3}\\)?[\\-\\s]?\\d{3}[\\-\\s]?\\d{4}' },
+  { name: 'otp-6digit',   label: 'OTP (6-digit)',    desc: 'Standalone 6-digit numeric codes',  pattern: '\\b[0-9]{6}\\b' },
+  { name: 'credit-card',  label: 'Credit Card',      desc: 'Luhn-valid 13–19 digit numbers',    pattern: '\\b(?:\\d[ \\-]?){13,19}\\b' },
+  { name: 'jwt',          label: 'JWT Token',        desc: 'eyJ… Bearer tokens',                pattern: 'eyJ[a-zA-Z0-9\\-_]+\\.eyJ[a-zA-Z0-9\\-_]+\\.[a-zA-Z0-9\\-_]+' },
+  { name: 'ipv4-private', label: 'Private IPv4',     desc: 'RFC 1918 private IPs',              pattern: '(10\\.\\d{1,3}\\.\\d{1,3}\\.\\d{1,3}|172\\.(1[6-9]|2\\d|3[01])\\.\\d{1,3}\\.\\d{1,3}|192\\.168\\.\\d{1,3}\\.\\d{1,3})' },
+  { name: 'uuid',         label: 'UUID v4',          desc: 'UUID v4 format',                    pattern: '[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-4[0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}' },
+  { name: 'aadhaar',      label: 'Aadhaar',          desc: '12-digit Indian Aadhaar numbers',   pattern: '\\b[2-9]{1}[0-9]{3}\\s[0-9]{4}\\s[0-9]{4}\\b' },
+  { name: 'pan-in',       label: 'PAN Card',         desc: 'Indian PAN card format',            pattern: '\\b[A-Z]{5}[0-9]{4}[A-Z]{1}\\b' },
+];
+
+let target = 'policy';
+let customPatterns = [];
+let customIdCounter = 0;
+
+// --- Render built-in checkboxes ---
+function renderBuiltins() {
+  const grid = document.getElementById('builtinGrid');
+  grid.innerHTML = BUILTINS.map(b => `
+    <label class="pattern-item">
+      <input type="checkbox" name="builtin" value="${b.name}" onchange="updateAll()">
+      <span><span class="pname">${b.label}</span><span class="pdesc">${b.desc}</span></span>
+    </label>`).join('');
+}
+
+// --- Custom patterns ---
+function addCustom() {
+  const id = ++customIdCounter;
+  customPatterns.push({ id, tab: 'write', regex: '', name: '', sample: '' });
+  renderCustoms();
+  updateAll();
+}
+
+function removeCustom(id) {
+  customPatterns = customPatterns.filter(p => p.id !== id);
+  renderCustoms();
+  updateAll();
+}
+
+function setCustomTab(id, tab) {
+  const p = customPatterns.find(p => p.id === id);
+  if (p) { p.tab = tab; renderCustoms(); updateAll(); }
+}
+
+function renderCustoms() {
+  const list = document.getElementById('customList');
+  list.innerHTML = customPatterns.map(p => `
+    <div class="custom-block" id="cb-${p.id}">
+      <div class="custom-header">
+        <span>Custom Pattern #${p.id}</span>
+        <button class="remove-btn" onclick="removeCustom(${p.id})">✕ Remove</button>
+      </div>
+      <div class="row2" style="margin-bottom:8px">
+        <div>
+          <label>Pattern name</label>
+          <input type="text" placeholder="e.g. order-id" value="${esc(p.name)}"
+            oninput="updateCustomField(${p.id},'name',this.value)">
+        </div>
+        <div></div>
+      </div>
+      <div class="tabs">
+        <button class="tab ${p.tab==='write'?'active':''}" onclick="setCustomTab(${p.id},'write')">Write regex</button>
+        <button class="tab ${p.tab==='suggest'?'active':''}" onclick="setCustomTab(${p.id},'suggest')">Suggest from sample</button>
+      </div>
+      ${p.tab === 'write' ? `
+        <label>Regex (RE2)</label>
+        <input type="text" placeholder="e.g. ORD-[0-9]{8}" value="${esc(p.regex)}"
+          oninput="updateCustomField(${p.id},'regex',this.value)">
+        <div class="validation" id="val-${p.id}">${validateRE2(p.regex)}</div>
+      ` : `
+        <label>Sample data</label>
+        <div class="suggest-row">
+          <input type="text" placeholder="e.g. ORD-20260423" value="${esc(p.sample)}"
+            oninput="updateCustomField(${p.id},'sample',this.value)" id="sampleInput-${p.id}">
+          <button class="suggest-btn" onclick="suggestRegex(${p.id})">Suggest</button>
+        </div>
+        ${p.regex ? `
+          <div style="margin-top:8px">
+            <label>Suggested regex (edit if needed)</label>
+            <input type="text" value="${esc(p.regex)}"
+              oninput="updateCustomField(${p.id},'regex',this.value)">
+            <div class="validation" id="val-${p.id}">${validateRE2(p.regex)}</div>
+          </div>` : ''}
+      `}
+    </div>`).join('');
+  // Re-apply validation display
+  customPatterns.forEach(p => applyValidationDisplay(p.id, p.regex));
+}
+
+function updateCustomField(id, field, value) {
+  const p = customPatterns.find(p => p.id === id);
+  if (p) { p[field] = value; if(field==='regex') applyValidationDisplay(id, value); updateAll(); }
+}
+
+function applyValidationDisplay(id, regex) {
+  const el = document.getElementById('val-' + id);
+  if (!el || !regex) { if(el){el.style.display='none';} return; }
+  const msg = validateRE2(regex);
+  el.className = 'validation ' + (msg === 'ok' ? 'ok' : 'err');
+  el.textContent = msg === 'ok' ? '✓ Valid RE2 pattern' : '✗ ' + msg;
+  el.style.display = 'block';
+}
+
+// RE2 safety check (client-side approximation)
+function validateRE2(pattern) {
+  if (!pattern) return '';
+  const unsafe = ['(?=','(?!','(?<=','(?<!','(?P<'];
+  for (const u of unsafe) if (pattern.includes(u)) return `Unsafe: "${u}" is not allowed (lookahead/lookbehind)`;
+  if (/\\[1-9]/.test(pattern)) return 'Unsafe: backreferences (\\1…\\9) are not allowed';
+  try { new RegExp(pattern); return 'ok'; }
+  catch(e) { return 'Invalid: ' + e.message; }
+}
+
+// Suggest regex from sample string
+function suggestRegex(id) {
+  const p = customPatterns.find(p => p.id === id);
+  if (!p) return;
+  const s = p.sample.trim();
+  if (!s) return;
+  let suggested = '';
+
+  // prefix + separator + digits: ORD-123, TXN-20260423
+  const prefixDigit = s.match(/^([A-Z0-9_\-]+[_\-])(\d+)$/i);
+  if (prefixDigit) {
+    const prefix = prefixDigit[1].replace(/[-]/g, '\\-').replace(/_/g,'_');
+    suggested = prefix + '\\d+';
+  }
+  // prefix + separator + alphanumeric: TXN_abc123
+  else if (s.match(/^([A-Z0-9]+[_\-])([a-zA-Z0-9]+)$/i)) {
+    const m = s.match(/^([A-Z0-9]+[_\-])([a-zA-Z0-9]+)$/i);
+    const sep = m[1].slice(-1) === '-' ? '\\-' : '_';
+    suggested = m[1].slice(0,-1) + sep + '[a-zA-Z0-9]+';
+  }
+  // Fixed-length all-alpha
+  else if (/^[a-zA-Z]+$/.test(s)) {
+    suggested = '[a-zA-Z]{' + s.length + '}';
+  }
+  // Fixed-length numeric
+  else if (/^\d+$/.test(s)) {
+    suggested = '\\d{' + s.length + '}';
+  }
+  // Fixed-length alphanumeric
+  else if (/^[a-zA-Z0-9]+$/.test(s)) {
+    suggested = '[a-zA-Z0-9]{' + s.length + '}';
+  }
+  // Fallback: escape special chars, replace alphanum runs
+  else {
+    suggested = s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&').replace(/[a-zA-Z0-9]+/g, '[a-zA-Z0-9]+');
+  }
+
+  p.regex = suggested;
+  renderCustoms();
+  updateAll();
+}
+
+// --- Target ---
+function setTarget(t) {
+  target = t;
+  document.getElementById('tgt-policy').classList.toggle('active', t === 'policy');
+  document.getElementById('tgt-annotation').classList.toggle('active', t === 'annotation');
+  document.getElementById('yamlLabel').textContent = t === 'policy' ? 'MaskingPolicy YAML' : 'Pod Annotation YAML';
+  updateAll();
+}
+
+// --- Collect active patterns ---
+function getActivePatterns() {
+  const result = [];
+  // built-ins
+  document.querySelectorAll('input[name=builtin]:checked').forEach(cb => {
+    const b = BUILTINS.find(x => x.name === cb.value);
+    if (b) result.push({ name: b.name, builtin: b.name, pattern: b.pattern, label: b.label });
+  });
+  // customs
+  customPatterns.forEach(p => {
+    if (p.name && p.regex && validateRE2(p.regex) === 'ok') {
+      result.push({ name: p.name, regex: p.regex, pattern: p.regex, label: p.name });
+    }
+  });
+  return result;
+}
+
+// --- Update all outputs ---
+function updateAll() {
+  const patterns = getActivePatterns();
+  const ns = document.getElementById('nsName').value.trim() || '<namespace>';
+  const log = document.getElementById('sampleLog').value;
+
+  updatePreview(patterns, log);
+  updateRegexOut(patterns);
+  updateYaml(patterns, ns);
+  updateLabel(ns);
+  updateSteps(patterns, ns);
+}
+
+function updatePreview(patterns, log) {
+  const el = document.getElementById('previewLine');
+  if (!log) { el.innerHTML = '<span class="empty-state">Paste a log line on the left to see masked output here.</span>'; return; }
+  if (!patterns.length) { el.textContent = log; return; }
+  // Apply all patterns, collecting match ranges
+  let result = log;
+  let segments = [{ text: log, masked: false }];
+  patterns.forEach(p => {
+    try {
+      const re = new RegExp(p.pattern, 'g');
+      const newSegs = [];
+      segments.forEach(seg => {
+        if (seg.masked) { newSegs.push(seg); return; }
+        let last = 0, m;
+        re.lastIndex = 0;
+        while ((m = re.exec(seg.text)) !== null) {
+          if (m.index > last) newSegs.push({ text: seg.text.slice(last, m.index), masked: false });
+          newSegs.push({ text: m[0], masked: true });
+          last = m.index + m[0].length;
+          if (m[0].length === 0) break;
+        }
+        if (last < seg.text.length) newSegs.push({ text: seg.text.slice(last), masked: false });
+      });
+      segments = newSegs;
+    } catch(e) {}
+  });
+  el.innerHTML = segments.map(s => s.masked
+    ? `<span class="redacted">[REDACTED]</span>`
+    : esc(s.text)).join('');
+}
+
+function updateRegexOut(patterns) {
+  const el = document.getElementById('regexOut');
+  if (!patterns.length) { el.textContent = '# Select patterns on the left'; return; }
+  el.textContent = patterns.map(p => `# ${p.label}\n${p.pattern}`).join('\n\n');
+}
+
+function updateYaml(patterns, ns) {
+  const el = document.getElementById('yamlOut');
+  if (!patterns.length) { el.textContent = '# Select patterns on the left'; return; }
+
+  if (target === 'policy') {
+    const patternsYaml = patterns.map(p => {
+      if (p.builtin) return `    - name: ${p.name}\n      builtin: ${p.builtin}`;
+      return `    - name: ${p.name}\n      regex: "${p.regex.replace(/"/g,'\\"')}"`;
+    }).join('\n');
+    el.textContent =
+`apiVersion: logcloak.io/v1alpha1
+kind: MaskingPolicy
+metadata:
+  name: pii-baseline
+  namespace: ${ns}
+spec:
+  patterns:
+${patternsYaml}
+  redactWith: "[REDACTED]"`;
+  } else {
+    // Pod annotation
+    const builtinNames = patterns.filter(p => p.builtin).map(p => p.name);
+    const customPs = patterns.filter(p => !p.builtin);
+    const lines = [];
+    if (builtinNames.length) lines.push(`    logcloak.io/patterns: "${builtinNames.join(',')}"`);
+    customPs.forEach(p => lines.push(`    logcloak.io/regex-${p.name}: "${p.regex.replace(/"/g,'\\"')}"`));
+    el.textContent =
+`# Add to your pod/deployment metadata.annotations:
+metadata:
+  annotations:
+${lines.join('\n')}`;
+  }
+}
+
+function updateLabel(ns) {
+  document.getElementById('labelOut').textContent =
+    `kubectl label namespace ${ns} logcloak.io/inject=true`;
+}
+
+function updateSteps(patterns, ns) {
+  const el = document.getElementById('stepsOut');
+  if (!patterns.length) { el.textContent = ''; return; }
+  const steps = target === 'policy' ? [
+    `1. Label your namespace:\n   kubectl label namespace ${ns} logcloak.io/inject=true`,
+    `2. Apply the MaskingPolicy YAML above:\n   kubectl apply -f masking-policy.yaml`,
+    `3. Deploy your application into the "${ns}" namespace.\n   logcloak will auto-inject the masker sidecar.`,
+    `4. Verify:\n   kubectl logs <your-pod> -n ${ns}`,
+  ] : [
+    `1. Label your namespace:\n   kubectl label namespace ${ns} logcloak.io/inject=true`,
+    `2. Add the annotations above to your pod/deployment spec.`,
+    `3. Deploy your application.\n   logcloak will auto-inject the masker sidecar.`,
+    `4. Verify:\n   kubectl logs <your-pod> -n ${ns}`,
+  ];
+  el.textContent = steps.join('\n\n');
+}
+
+// --- Copy to clipboard ---
+function copyBlock(id, btn) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    btn.textContent = 'Copied!';
+    btn.classList.add('copied');
+    setTimeout(() => { btn.textContent = 'Copy'; btn.classList.remove('copied'); }, 1800);
+  });
+}
+
+// --- Helpers ---
+function esc(s) {
+  return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// Init
+renderBuiltins();
+updateAll();
+</script>
+</body>
+</html>
