@@ -20,18 +20,6 @@ const (
 	maxLineBytes = 1 << 20 // 1 MiB
 )
 
-// maskTimeout reads LOGCLOAK_MASK_TIMEOUT (e.g. "50ms", "5ms").
-// Defaults to 50ms — enough headroom for goroutine scheduling on constrained
-// nodes while still being fail-closed against any runaway regex.
-func maskTimeout() time.Duration {
-	if v := os.Getenv("LOGCLOAK_MASK_TIMEOUT"); v != "" {
-		if d, err := time.ParseDuration(v); err == nil && d > 0 {
-			return d
-		}
-	}
-	return 50 * time.Millisecond
-}
-
 func main() {
 	metrics.MustRegister()
 
@@ -66,15 +54,8 @@ func main() {
 		line := scanner.Text()
 
 		start := time.Now()
-		masked, matched, dropped := maskWithTimeout(m, line, maskTimeout())
-		elapsed := time.Since(start).Seconds()
-		metrics.ProcessingDuration.WithLabelValues(podName, podNS).Observe(elapsed)
-
-		if dropped {
-			fmt.Println(sentinel.Line("regex_timeout", podName))
-			metrics.DroppedLines.WithLabelValues(podName, podNS, "regex_timeout").Inc()
-			continue
-		}
+		masked, matched := m.MaskLine(line)
+		metrics.ProcessingDuration.WithLabelValues(podName, podNS).Observe(time.Since(start).Seconds())
 
 		fmt.Println(masked)
 		metrics.ProcessedLines.WithLabelValues(podName, podNS).Inc()
@@ -86,24 +67,6 @@ func main() {
 	if err := scanner.Err(); err != nil {
 		fmt.Fprintf(os.Stderr, "[logcloak] scanner error: %v\n", err)
 		os.Exit(1)
-	}
-}
-
-func maskWithTimeout(m *masker.Masker, line string, timeout time.Duration) (masked string, matched []string, dropped bool) {
-	type result struct {
-		masked  string
-		matched []string
-	}
-	ch := make(chan result, 1)
-	go func() {
-		masked, matched := m.MaskLine(line)
-		ch <- result{masked, matched}
-	}()
-	select {
-	case r := <-ch:
-		return r.masked, r.matched, false
-	case <-time.After(timeout):
-		return "", nil, true
 	}
 }
 
