@@ -16,7 +16,9 @@ webhooks:
       name: logcloak-webhook
       namespace: {{ .Release.Namespace }}
       path: /mutate
-    caBundle: ""
+    # caBundle is intentionally absent here — the webhook patches it at startup
+    # via PatchWebhookCABundle. Keeping it out of the Helm template means Helm
+    # never owns this field, so helm upgrade never conflicts with the webhook's patch.
   namespaceSelector:
     matchLabels:
       logcloak.io/inject: "true"
