@@ -16,14 +16,16 @@ func New(rules []Rule) *Masker {
 	return &Masker{rules: rules}
 }
 
-func (m *Masker) MaskLine(line string) (masked string, changed bool) {
+// MaskLine applies all rules to line and returns the masked result plus the
+// names of every rule that matched at least once.
+func (m *Masker) MaskLine(line string) (masked string, matched []string) {
 	masked = line
 	for _, r := range m.rules {
 		result := r.Pattern.ReplaceAllString(masked, r.Replace)
 		if result != masked {
 			masked = result
-			changed = true
+			matched = append(matched, r.Name)
 		}
 	}
-	return masked, changed
+	return masked, matched
 }

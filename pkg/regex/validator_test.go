@@ -41,3 +41,29 @@ func TestValidate_RejectsBackreference(t *testing.T) {
 		t.Error("backreference should be rejected")
 	}
 }
+
+func TestValidate_RejectsNamedCapturePCRE(t *testing.T) {
+	if err := regex.Validate(`(?P<name>[a-z]+)`); err == nil {
+		t.Error("PCRE-style named capture should be rejected")
+	}
+}
+
+func TestValidate_EmptyPatternAllowed(t *testing.T) {
+	if err := regex.Validate(``); err != nil {
+		t.Errorf("empty pattern is valid RE2, should be allowed: %v", err)
+	}
+}
+
+func TestValidate_ComplexSafePattern(t *testing.T) {
+	// Groups, alternation, anchors — all RE2-safe
+	safe := `^(foo|bar)\d{3}[a-zA-Z]+$`
+	if err := regex.Validate(safe); err != nil {
+		t.Errorf("safe complex pattern rejected: %v", err)
+	}
+}
+
+func TestValidate_RejectsBackreferenceTwo(t *testing.T) {
+	if err := regex.Validate(`(a)(b)\2`); err == nil {
+		t.Error(`backreference \2 should be rejected`)
+	}
+}

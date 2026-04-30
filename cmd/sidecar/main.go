@@ -55,7 +55,7 @@ func main() {
 		line := scanner.Text()
 
 		start := time.Now()
-		masked, dropped := maskWithTimeout(m, line, maskingTimeout)
+		masked, matched, dropped := maskWithTimeout(m, line, maskingTimeout)
 		elapsed := time.Since(start).Seconds()
 		metrics.ProcessingDuration.WithLabelValues(podName, podNS).Observe(elapsed)
 
@@ -67,6 +67,9 @@ func main() {
 
 		fmt.Println(masked)
 		metrics.ProcessedLines.WithLabelValues(podName, podNS).Inc()
+		for _, name := range matched {
+			metrics.MaskedLines.WithLabelValues(podName, podNS, name).Inc()
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
@@ -75,20 +78,21 @@ func main() {
 	}
 }
 
-func maskWithTimeout(m *masker.Masker, line string, timeout time.Duration) (string, bool) {
+func maskWithTimeout(m *masker.Masker, line string, timeout time.Duration) (masked string, matched []string, dropped bool) {
 	type result struct {
-		masked string
+		masked  string
+		matched []string
 	}
 	ch := make(chan result, 1)
 	go func() {
-		masked, _ := m.MaskLine(line)
-		ch <- result{masked}
+		masked, matched := m.MaskLine(line)
+		ch <- result{masked, matched}
 	}()
 	select {
 	case r := <-ch:
-		return r.masked, false
+		return r.masked, r.matched, false
 	case <-time.After(timeout):
-		return "", true
+		return "", nil, true
 	}
 }
 

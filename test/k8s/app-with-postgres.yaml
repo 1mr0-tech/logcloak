@@ -1,0 +1,40 @@
+---
+# App + postgres sidecar pod — tests that logcloak wraps only the app
+# container and leaves postgres (excluded via annotation) untouched.
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app-with-postgres
+  namespace: production
+  annotations:
+    logcloak.io/exclude-containers: "postgres"
+    logcloak.io/patterns: "uuid"
+    logcloak.io/regex-order-id: 'ORD-[0-9]{8}'
+spec:
+  restartPolicy: Never
+  containers:
+  - name: app
+    image: busybox:1.36
+    command: ["sh", "-c"]
+    args:
+    - |
+      i=0
+      while true; do
+        i=$((i+1))
+        echo "[INFO] [$i] Processing payment for user@shop.com card=4111111111111111 otp=847291"
+        echo "[INFO] [$i] Auth: Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyMTIzIn0.abc123"
+        echo "[INFO] [$i] Customer phone: +919876543210, order ORD-20260430"
+        echo "[INFO] [$i] txn=550e8400-e29b-41d4-a716-446655440000 status=ok"
+        echo "[INFO] [$i] plain log line with no PII at all"
+        sleep 1
+      done
+  - name: postgres
+    image: busybox:1.36
+    command: ["sh", "-c"]
+    args:
+    - |
+      while true; do
+        echo "[postgres] connection from 10.42.0.1:5432 accepted"
+        echo "[postgres] checkpoint complete: wrote 128 buffers"
+        sleep 2
+      done

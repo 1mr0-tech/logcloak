@@ -1,0 +1,18 @@
+apiVersion: logcloak.io/v1alpha1
+kind: MaskingPolicy
+metadata:
+  name: pii-baseline
+  namespace: production
+spec:
+  patterns:
+    - name: email
+      builtin: email
+    - name: otp
+      builtin: otp-6digit
+    - name: credit-card
+      builtin: credit-card
+    - name: jwt
+      builtin: jwt
+    - name: phone-e164
+      builtin: phone-e164
+  redactWith: "[REDACTED]"

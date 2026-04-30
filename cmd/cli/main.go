@@ -85,8 +85,8 @@ func cmdPreview(args []string) {
 	scanner := bufio.NewScanner(in)
 	for scanner.Scan() {
 		line := scanner.Text()
-		masked, changed := m.MaskLine(line)
-		if changed {
+		masked, matched := m.MaskLine(line)
+		if len(matched) > 0 {
 			fmt.Printf("\033[33m%s\033[0m\n", masked)
 		} else {
 			fmt.Println(line)

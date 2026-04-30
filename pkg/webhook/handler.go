@@ -117,6 +117,11 @@ func (h *Handler) resolveRules(ctx context.Context, namespace string, pod corev1
 	return rules.Merge(matching, annotationSpecs)
 }
 
+// MutateForTest exposes mutate for integration tests without requiring an HTTP server.
+func (h *Handler) MutateForTest(ctx context.Context, req admissionv1.AdmissionRequest) *admissionv1.AdmissionResponse {
+	return h.mutate(ctx, &req)
+}
+
 func allow(patch []Op) *admissionv1.AdmissionResponse {
 	resp := &admissionv1.AdmissionResponse{Allowed: true}
 	if len(patch) > 0 {
