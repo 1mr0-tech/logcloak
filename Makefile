@@ -2,7 +2,7 @@ REGISTRY ?= ghcr.io/1mr0-tech
 VERSION  ?= $(shell git describe --tags --always --dirty 2>/dev/null || echo "dev")
 BINARIES  = webhook controller sidecar cli
 
-.PHONY: build test lint docker-build docker-push helm-package clean
+.PHONY: build test test-integration lint docker-build docker-push helm-package clean
 
 build:
 	@for bin in $(BINARIES); do \
@@ -13,6 +13,15 @@ build:
 
 test:
 	go test ./... -race -coverprofile=coverage.out
+
+test-integration:
+	@if [ -z "$$KUBEBUILDER_ASSETS" ]; then \
+		echo "KUBEBUILDER_ASSETS not set. Run:"; \
+		echo "  setup-envtest use 1.30 --bin-dir /tmp/envtest-bins"; \
+		echo "  export KUBEBUILDER_ASSETS=\$$(setup-envtest use 1.30 --bin-dir /tmp/envtest-bins -p path)"; \
+		exit 1; \
+	fi
+	go test ./test/integration/... -v -race
 
 lint:
 	golangci-lint run ./...

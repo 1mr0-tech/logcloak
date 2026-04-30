@@ -1,0 +1,49 @@
+# JVM / Spring Boot image test — validates that logcloak correctly wraps a
+# Java container. JVM apps write to stdout which is redirected through the FIFO.
+# Tests that multi-line JVM stack traces are handled line-by-line (each line
+# independently masked; partial stack trace lines without PII pass through).
+#
+# Prerequisites:
+#   kubectl label namespace production logcloak.io/inject=true
+#   kubectl apply -f test/k8s/masking-policy.yaml
+#
+# Run:
+#   kubectl apply -f test/k8s/jvm-app.yaml
+#
+# Verify:
+#   kubectl logs jvm-app -n production -c logcloak | grep REDACTED
+#   # Stack trace lines should appear unmodified (no PII in them)
+#   kubectl logs jvm-app -n production -c logcloak | grep "at com.example"
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: jvm-app
+  namespace: production
+  annotations:
+    logcloak.io/patterns: "email,credit-card,jwt"
+spec:
+  restartPolicy: Never
+  containers:
+  - name: app
+    image: eclipse-temurin:21-jre
+    command: ["sh", "-c"]
+    args:
+    - |
+      for i in $(seq 1 15); do
+        echo "2026-04-30T10:00:${i}Z INFO  PaymentService - Processing payment for user@jvm.example.com"
+        echo "2026-04-30T10:00:${i}Z INFO  PaymentService - Card: 4111111111111111 amount: $99.00"
+        echo "2026-04-30T10:00:${i}Z INFO  AuthService    - Token: eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ1c2VyIn0.abc"
+        echo "2026-04-30T10:00:${i}Z ERROR PaymentService - Payment failed"
+        echo "  java.lang.RuntimeException: upstream timeout"
+        echo "  at com.example.payment.PaymentService.charge(PaymentService.java:42)"
+        echo "  at com.example.payment.PaymentController.post(PaymentController.java:18)"
+        sleep 1
+      done
+    resources:
+      requests:
+        cpu: 50m
+        memory: 128Mi
+      limits:
+        cpu: 500m
+        memory: 256Mi

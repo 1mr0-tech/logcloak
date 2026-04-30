@@ -1,0 +1,75 @@
+# Stress batch — spawns N concurrent stress pods to simulate multi-pod load.
+# Default: 10 pods, each writing ~100 lines/sec = ~1,000 lines/sec cluster-wide.
+# Scale replicas to test higher load. Monitor sidecar CPU/memory with kubectl top.
+#
+# Prerequisites:
+#   kubectl label namespace production logcloak.io/inject=true
+#   kubectl apply -f test/k8s/masking-policy.yaml
+#
+# Run:
+#   kubectl apply -f test/k8s/stress-batch.yaml
+#
+# Watch (in separate terminals):
+#   watch -n2 kubectl top pods -n production -l app=stress-batch
+#   kubectl exec -n logcloak deploy/logcloak-webhook -- \
+#     curl -s http://localhost:9090/metrics | grep logcloak_
+#
+# Expected results:
+#   - logcloak_lines_processed_total increases at ~1,000/sec
+#   - logcloak_dropped_lines_total stays at 0
+#   - logcloak_processing_duration_seconds p99 < 1ms
+#   - sidecar container memory < 64Mi per pod
+#   - no [LOGCLOAK-DROP] lines in kubectl logs output
+#
+# Cleanup:
+#   kubectl delete -f test/k8s/stress-batch.yaml
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: stress-batch
+  namespace: production
+  labels:
+    app: stress-batch
+spec:
+  replicas: 10
+  selector:
+    matchLabels:
+      app: stress-batch
+  template:
+    metadata:
+      labels:
+        app: stress-batch
+      annotations:
+        logcloak.io/patterns: "uuid"
+        logcloak.io/regex-order-id: 'ORD-[0-9]{8}'
+    spec:
+      terminationGracePeriodSeconds: 5
+      containers:
+      - name: app
+        image: busybox:1.36
+        command: ["sh", "-c"]
+        args:
+        - |
+          i=0
+          while true; do
+            i=$((i+1))
+            echo "[INFO] [$i] Payment user@stress.example.com card=4111111111111111 otp=293847"
+            echo "[INFO] [$i] JWT eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJzdHJlc3MifQ.abc123"
+            echo "[INFO] [$i] Phone +12025550199 order ORD-20260430"
+            echo "[INFO] [$i] txn=550e8400-e29b-41d4-a716-446655440000 result=approved"
+            echo "[INFO] [$i] SSN 123-45-6789 for account holder"
+            echo "[INFO] [$i] Cache hit key=session_data_v2 latency=1.2ms"
+            echo "[INFO] [$i] DB query duration=45ms rows=12"
+            echo "[INFO] [$i] HTTP GET /api/v1/orders 200 OK"
+            echo "[INFO] [$i] Worker pool size=8 queue_depth=0"
+            echo "[INFO] [$i] Checkpoint complete wrote=128 buffers"
+            sleep 0.1
+          done
+        resources:
+          requests:
+            cpu: 10m
+            memory: 16Mi
+          limits:
+            cpu: 100m
+            memory: 64Mi

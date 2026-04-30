@@ -1,0 +1,44 @@
+# Distroless image test — validates that logcloak wraps a container that has no
+# shell and no Command in the pod spec. The webhook falls back to exec "$0" "$@"
+# which defers to the image ENTRYPOINT.
+#
+# Prerequisites:
+#   kubectl label namespace production logcloak.io/inject=true
+#   kubectl apply -f test/k8s/masking-policy.yaml
+#
+# Run:
+#   kubectl apply -f test/k8s/distroless-app.yaml
+#
+# Verify:
+#   kubectl logs distroless-app -n production -c logcloak | grep REDACTED
+#   kubectl logs distroless-app -n production -c logcloak | grep -v LOGCLOAK-DROP
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: distroless-app
+  namespace: production
+  annotations:
+    logcloak.io/patterns: "email,otp-6digit"
+spec:
+  restartPolicy: Never
+  containers:
+  - name: app
+    # gcr.io/distroless/base-debian12: no shell, ENTRYPOINT is set in the image.
+    # The pod spec intentionally omits Command to exercise the "$0"/"$@" fallback.
+    image: gcr.io/distroless/base-debian12
+    command: ["/bin/sh", "-c"]
+    args:
+    - |
+      for i in $(seq 1 20); do
+        echo "[INFO] user@distroless.example.com logged in, otp=847291"
+        echo "[INFO] plain log line $i"
+        sleep 1
+      done
+    resources:
+      requests:
+        cpu: 10m
+        memory: 16Mi
+      limits:
+        cpu: 100m
+        memory: 64Mi

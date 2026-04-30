@@ -3,7 +3,12 @@
 !documentation.md
 !README.md
 !GUIDE.md
-docs/
+!ROADMAP.md
+!SECURITY.md
+!CONTRIBUTING.md
+!CHANGELOG.md
+docs/superpowers/
+!docs/*.md
 .claude/
 .worktrees/
 
