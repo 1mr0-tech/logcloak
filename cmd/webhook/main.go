@@ -9,6 +9,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
@@ -101,6 +102,16 @@ func main() {
 		if err := srv.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
 			fmt.Fprintf(os.Stderr, "server error: %v\n", err)
 			os.Exit(1)
+		}
+	}()
+
+	metricsMux := http.NewServeMux()
+	metricsMux.Handle("/metrics", promhttp.Handler())
+	metricsMux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
+	go func() {
+		fmt.Fprintf(os.Stderr, "logcloak-webhook metrics on :9090\n")
+		if err := http.ListenAndServe(":9090", metricsMux); err != nil {
+			fmt.Fprintf(os.Stderr, "metrics server error: %v\n", err)
 		}
 	}()
 
