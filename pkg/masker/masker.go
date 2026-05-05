@@ -21,7 +21,7 @@ func New(rules []Rule) *Masker {
 func (m *Masker) MaskLine(line string) (masked string, matched []string) {
 	masked = line
 	for _, r := range m.rules {
-		result := r.Pattern.ReplaceAllString(masked, r.Replace)
+		result := r.Pattern.ReplaceAllLiteralString(masked, r.Replace)
 		if result != masked {
 			masked = result
 			matched = append(matched, r.Name)

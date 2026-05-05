@@ -19,8 +19,6 @@ controller:
 
 sidecar:
   image: ghcr.io/1mr0-tech/logcloak-sidecar
-  auditLog: false
-  processingTimeoutMs: 5
   maxLineSizeBytes: 1048576  # 1MB
   resources:
     requests:

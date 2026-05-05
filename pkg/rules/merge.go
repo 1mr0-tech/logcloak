@@ -7,6 +7,7 @@ import (
 
 	"github.com/1mr0-tech/logcloak/pkg/masker"
 	"github.com/1mr0-tech/logcloak/pkg/patterns"
+	"github.com/1mr0-tech/logcloak/pkg/regex"
 )
 
 // SerializedRule is the wire format for LOGCLOAK_RULES env var.
@@ -65,6 +66,9 @@ func compileSpec(spec PatternSpec, replace string) (masker.Rule, error) {
 		return masker.Rule{Name: spec.Name, Pattern: b.Pattern, Replace: replace}, nil
 	}
 	if spec.Regex != "" {
+		if err := regex.Validate(spec.Regex); err != nil {
+			return masker.Rule{}, fmt.Errorf("unsafe regex for %q: %w", spec.Name, err)
+		}
 		re, err := regexp.Compile(spec.Regex)
 		if err != nil {
 			return masker.Rule{}, fmt.Errorf("invalid regex for %q: %w", spec.Name, err)

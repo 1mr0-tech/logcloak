@@ -92,9 +92,12 @@ func main() {
 	})
 
 	srv := &http.Server{
-		Addr:      ":8443",
-		Handler:   mux,
-		TLSConfig: tlsCfg,
+		Addr:              ":8443",
+		Handler:           mux,
+		TLSConfig:         tlsCfg,
+		ReadHeaderTimeout: 10 * time.Second,
+		ReadTimeout:       30 * time.Second,
+		WriteTimeout:      30 * time.Second,
 	}
 
 	go func() {

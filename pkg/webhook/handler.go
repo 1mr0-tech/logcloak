@@ -30,6 +30,7 @@ func (h *Handler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, "method not allowed", http.StatusMethodNotAllowed)
 		return
 	}
+	r.Body = http.MaxBytesReader(w, r.Body, 4<<20) // 4 MiB
 	body, err := io.ReadAll(r.Body)
 	if err != nil {
 		metrics.WebhookErrors.WithLabelValues("read_body").Inc()

@@ -76,7 +76,7 @@ func generateSelfSigned(serviceName, namespace string) (TLSBundle, error) {
 		SerialNumber:          big.NewInt(1),
 		Subject:               pkix.Name{CommonName: "logcloak-ca"},
 		NotBefore:             time.Now().Add(-time.Minute),
-		NotAfter:              time.Now().Add(10 * 365 * 24 * time.Hour),
+		NotAfter:              time.Now().Add(365 * 24 * time.Hour),
 		IsCA:                  true,
 		KeyUsage:              x509.KeyUsageCertSign | x509.KeyUsageCRLSign,
 		BasicConstraintsValid: true,
@@ -105,7 +105,7 @@ func generateSelfSigned(serviceName, namespace string) (TLSBundle, error) {
 		Subject:      pkix.Name{CommonName: dnsNames[2]},
 		DNSNames:     dnsNames,
 		NotBefore:    time.Now().Add(-time.Minute),
-		NotAfter:     time.Now().Add(10 * 365 * 24 * time.Hour),
+		NotAfter:     time.Now().Add(365 * 24 * time.Hour),
 		KeyUsage:     x509.KeyUsageDigitalSignature,
 		ExtKeyUsage:  []x509.ExtKeyUsage{x509.ExtKeyUsageServerAuth},
 	}

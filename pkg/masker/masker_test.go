@@ -104,6 +104,23 @@ func TestMaskLine_OnlyMatchedRulesReturned(t *testing.T) {
 	}
 }
 
+func TestMaskLine_DollarSignInReplacement(t *testing.T) {
+	// redactWith containing "$1" must be treated as a literal string,
+	// not a capture-group back-reference — otherwise PII leaks through.
+	m := masker.New([]masker.Rule{{
+		Name:    "email",
+		Pattern: regexp.MustCompile(`[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}`),
+		Replace: "$1",
+	}})
+	masked, matched := m.MaskLine("user@example.com logged in")
+	if len(matched) == 0 {
+		t.Fatal("expected rule to match")
+	}
+	if masked != "$1 logged in" {
+		t.Errorf("expected literal $1 replacement, got %q", masked)
+	}
+}
+
 func TestMaskLine_LargeLine(t *testing.T) {
 	// 500KB line should not panic or block
 	large := make([]byte, 512*1024)
