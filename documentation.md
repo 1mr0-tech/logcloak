@@ -159,6 +159,83 @@ unsafe regex construct "(?=" detected — only RE2-compatible patterns allowed
 
 ---
 
+## JSON field masking
+
+Most production services log in JSON. logcloak can mask specific field names in structured JSON logs — regardless of value format — without affecting other fields.
+
+### Via MaskingPolicy CRD
+
+```yaml
+spec:
+  patterns:
+    - name: password-field
+      field: password
+    - name: token-field
+      field: api_token
+    - name: card-field
+      field: card_number
+```
+
+### Via pod annotation
+
+```yaml
+metadata:
+  annotations:
+    logcloak.io/fields: "password,token,api_key,card_number"
+```
+
+**Before:**
+```json
+{"level":"info","user":"alice","password":"s3cr3t","action":"login"}
+```
+**After:**
+```json
+{"level":"info","user":"alice","password":"[REDACTED]","action":"login"}
+```
+
+Field masking recurses into nested objects and arrays. It runs before regex rules, so both can be active simultaneously.
+
+> Field masking applies to lines that begin with `{`. Lines with a timestamp or log-level prefix before the JSON object are handled by regex rules.
+
+---
+
+## Audit logs before you deploy
+
+`logcloak scan` scans any log source for PII hits using all 10 built-in patterns. No Kubernetes cluster required.
+
+```bash
+# Scan live pod logs
+kubectl logs my-pod | logcloak scan
+
+# Scan a file
+logcloak scan /var/log/app.log
+
+# Scan all pods in a namespace
+for pod in $(kubectl get pods -n production -o name); do
+  echo "=== $pod ===" && kubectl logs -n production $pod | logcloak scan
+done
+```
+
+**Example output:**
+```
+line 42     user [REDACTED:email] placed order        [email]
+line 97     OTP sent: [REDACTED:otp-6digit]           [otp-6digit]
+
+────────────────────────────────────────────────────────
+logcloak scan summary
+────────────────────────────────────────────────────────
+Total lines:     1234
+Lines with PII:  2 (0.2%)
+Pattern hits:
+  email:               1
+  otp-6digit:          1
+────────────────────────────────────────────────────────
+
+Protect these logs → kubectl label namespace <ns> logcloak.io/inject=true
+```
+
+---
+
 ## Viewing logs
 
 ```bash
@@ -259,14 +336,6 @@ logcloak exposes Prometheus metrics on port `9090` from the sidecar container.
 | `logcloak_webhook_admissions_total` | Webhook admission outcomes |
 | `logcloak_webhook_errors_total` | Webhook failures |
 
-### Enable audit log
-
-To emit a structured redaction event to sidecar stderr each time a pattern fires:
-
-```bash
-helm upgrade logcloak logcloak/logcloak --set sidecar.auditLog=true
-```
-
 ---
 
 ## Configuration reference
@@ -277,8 +346,6 @@ helm upgrade logcloak logcloak/logcloak --set sidecar.auditLog=true
 | `tls.mode` | `self-signed` | TLS mode: `self-signed`, `certManager`, `bring-your-own` |
 | `webhook.failurePolicy` | `Ignore` | `Ignore`: pods start uninjected if webhook is down. `Fail`: blocks pod creation |
 | `webhook.timeoutSeconds` | `5` | Webhook response timeout |
-| `sidecar.auditLog` | `false` | Emit structured redaction events to sidecar stderr |
-| `sidecar.processingTimeoutMs` | `5` | Max milliseconds per log line before drop |
 | `sidecar.maxLineSizeBytes` | `1048576` | Lines larger than this are dropped with `reason=line_too_long` |
 | `sidecar.resources.requests.cpu` | `5m` | CPU request per injected pod |
 | `sidecar.resources.requests.memory` | `20Mi` | Memory request per injected pod |

@@ -96,15 +96,15 @@ kubectl logs my-pod
 | Name | Matches |
 |---|---|
 | `email` | Email addresses |
-| `phone-in` | Indian mobile numbers (+91 variants) |
-| `phone-us` | US phone numbers |
+| `phone-e164` | E.164 international phone numbers (+12025550104) |
+| `phone-us` | US phone number formats (domestic with separators) |
 | `otp-6digit` | 6-digit OTP codes |
 | `credit-card` | 13–19 digit card numbers |
-| `jwt` | JWT tokens |
-| `ipv4-private` | RFC 1918 private IPs |
+| `jwt` | JWT tokens (`eyJ…`) |
+| `ipv4-private` | RFC 1918 private IP addresses |
 | `uuid` | UUID v4 |
-| `aadhaar` | 12-digit Aadhaar numbers |
-| `pan-in` | Indian PAN card format |
+| `iban` | International Bank Account Numbers (all countries) |
+| `ssn` | US Social Security Numbers (XXX-XX-XXXX) |
 
 ## JSON field masking
 

@@ -114,10 +114,10 @@ kubectl get mutatingwebhookconfiguration logcloak-webhook \
 ```
 subject=CN = logcloak-ca
 notBefore=Apr 23 08:14:04 2026 GMT
-notAfter=Apr 20 08:15:04 2036 GMT
+notAfter=Apr 20 08:15:04 2027 GMT
 ```
 
-The certificate is valid for 10 years and auto-renewed on pod restart if it is missing.
+The certificate is valid for 1 year and auto-renewed on pod restart if it is missing.
 
 ---
 
@@ -186,8 +186,8 @@ spec:
   patterns:
     - name: email
       builtin: email
-    - name: phone-in
-      builtin: phone-in
+    - name: phone
+      builtin: phone-e164
     - name: otp
       builtin: otp-6digit
     - name: credit-card
@@ -223,16 +223,15 @@ pii-baseline   5s
 | Name | What it matches |
 |---|---|
 | `email` | RFC 5321 email addresses |
-| `phone-in` | Indian mobile numbers (+91 variants) |
-| `phone-us` | US phone numbers |
+| `phone-e164` | E.164 international phone numbers (+12025550104) |
+| `phone-us` | US phone number formats (domestic with separators) |
 | `otp-6digit` | Standalone 6-digit numeric codes |
 | `credit-card` | 13–19 digit card numbers |
-| `jwt` | eyJ… JWT tokens |
+| `jwt` | `eyJ…` JWT tokens |
 | `ipv4-private` | RFC 1918 private IP addresses |
 | `uuid` | UUID v4 |
 | `iban` | International Bank Account Numbers (all countries) |
 | `ssn` | US Social Security Numbers (XXX-XX-XXXX) |
-| `phone-e164` | E.164 international phone (+12025550104) |
 
 ### Targeting specific services with a selector
 
@@ -392,7 +391,7 @@ metadata:
   name: order-service
   namespace: production
   annotations:
-    logcloak.io/patterns: "uuid,pan-in"
+    logcloak.io/patterns: "uuid,ssn"
     logcloak.io/regex-order-id: 'ORD-[0-9]{8}'
     logcloak.io/regex-session: 'sess_[a-zA-Z0-9]{32}'
 spec:
@@ -406,7 +405,7 @@ spec:
       while true; do
         echo "[INFO] Order ORD-20260423 placed by user@shop.com"
         echo "[INFO] Session sess_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4 started"
-        echo "[INFO] Customer PAN: ABCDE1234F txn=550e8400-e29b-41d4-a716-446655440000"
+        echo "[INFO] Customer SSN: 123-45-6789 txn=550e8400-e29b-41d4-a716-446655440000"
         sleep 2
       done
 ```
@@ -423,10 +422,10 @@ kubectl logs order-service -n production
 ```
 [INFO] Order [REDACTED] placed by [REDACTED]
 [INFO] Session [REDACTED] started
-[INFO] Customer PAN: [REDACTED] txn=[REDACTED]
+[INFO] Customer SSN: [REDACTED] txn=[REDACTED]
 ```
 
-Both the MaskingPolicy rules (email) and the annotation rules (order-id, session, uuid, pan-in) are applied to every log line. The annotation rules extend — not replace — the policy rules.
+Both the MaskingPolicy rules (email) and the annotation rules (order-id, session, uuid, ssn) are applied to every log line. The annotation rules extend — not replace — the policy rules.
 
 ---
 

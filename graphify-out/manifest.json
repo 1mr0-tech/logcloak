@@ -40,13 +40,13 @@
     "semantic_hash": ""
   },
   "pkg/patterns/patterns.go": {
-    "mtime": 1777463746.0,
-    "ast_hash": "b9d81ccf4de89c996980c084abd05649",
+    "mtime": 1781411389.0519662,
+    "ast_hash": "d35f811543941768fe2dede17d17671b",
     "semantic_hash": ""
   },
   "pkg/patterns/patterns_test.go": {
-    "mtime": 1777463746.0,
-    "ast_hash": "7e609eca8b93fbd8386ae255768c0923",
+    "mtime": 1781411538.1839514,
+    "ast_hash": "0cd51f424a5519f11f32f9501e2d2ff2",
     "semantic_hash": ""
   },
   "pkg/regex/validator.go": {
@@ -140,13 +140,13 @@
     "semantic_hash": ""
   },
   "GUIDE.md": {
-    "mtime": 1781407118.719663,
-    "ast_hash": "017b7029a376c024029344f6531fec7e",
+    "mtime": 1781415901.7120512,
+    "ast_hash": "b2adeb866905a3596fd8a6c54b8395bc",
     "semantic_hash": ""
   },
   "README.md": {
-    "mtime": 1781406896.915699,
-    "ast_hash": "4912ffd02f7becb5f3a73adb2d7b02b7",
+    "mtime": 1781415835.7930732,
+    "ast_hash": "35cbeb16fd4edb44af1c24830c06d154",
     "semantic_hash": ""
   },
   "ROADMAP.md": {
@@ -245,8 +245,8 @@
     "semantic_hash": ""
   },
   "documentation.md": {
-    "mtime": 1777463746.0,
-    "ast_hash": "9b8ad5f9008a0c08d54906d545840cce",
+    "mtime": 1781415858.5191069,
+    "ast_hash": "2f18200240da911ec37c3da83724794c",
     "semantic_hash": ""
   },
   "test/k8s/README.md": {
@@ -270,8 +270,8 @@
     "semantic_hash": ""
   },
   "test/k8s/masking-policy.yaml": {
-    "mtime": 1777523610.0875378,
-    "ast_hash": "7124786bdc063b13891dd858c2aabfde",
+    "mtime": 1781413569.278746,
+    "ast_hash": "5889deb760c3109968f9cafeaff1df3d",
     "semantic_hash": ""
   },
   "test/k8s/stress-batch.yaml": {
