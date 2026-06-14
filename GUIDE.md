@@ -342,6 +342,46 @@ annotations:
 
 Replace `<name>` with a short identifier for the pattern. The regex must be RE2-compatible (no lookaheads, no backreferences).
 
+### Mask JSON field names (structured logs)
+
+If your service logs in JSON, use `logcloak.io/fields` to mask fields by name — regardless of their value format:
+
+```yaml
+annotations:
+  logcloak.io/fields: "password,token,api_key,card_number"
+```
+
+**Before:**
+```json
+{"level":"info","user":"alice","password":"s3cr3t","action":"login"}
+```
+**After:**
+```json
+{"level":"info","user":"alice","password":"[REDACTED]","action":"login"}
+```
+
+Field masking recurses into nested objects and arrays. You can combine it with built-in patterns and custom regex:
+
+```yaml
+annotations:
+  logcloak.io/patterns: "email,jwt"
+  logcloak.io/fields: "password,secret,api_key"
+  logcloak.io/regex-order-id: 'ORD-[0-9]{8}'
+```
+
+You can also declare field masking in a `MaskingPolicy` CRD for cluster-wide enforcement:
+
+```yaml
+spec:
+  patterns:
+    - name: password-field
+      field: password
+    - name: token-field
+      field: api_token
+```
+
+> **Scope:** JSON field masking applies to lines that begin with `{`. Lines starting with a timestamp or log level prefix (e.g. `2026-01-01 INFO {...}`) are handled by regex masking instead.
+
 ### Example — order service with custom patterns
 
 ```yaml
@@ -429,6 +469,47 @@ invalid regex in annotation "logcloak.io/regex-bad": unsafe regex construct "(?=
 ```
 
 The pod is blocked before it starts.
+
+---
+
+## Audit logs before you deploy (logcloak scan)
+
+`logcloak scan` lets you check what PII is currently leaking from any log source — no Kubernetes cluster needed. Pipe logs through it to understand your exposure before enabling masking.
+
+```bash
+# Audit current live logs
+kubectl logs my-pod | logcloak scan
+
+# Audit a file
+logcloak scan /var/log/app.log
+
+# Audit all pods in a namespace
+for pod in $(kubectl get pods -n production -o name); do
+  echo "=== $pod ===" && kubectl logs -n production $pod | logcloak scan
+done
+```
+
+**Example output:**
+```
+line 42     user [REDACTED:email] placed order        [email]
+line 97     OTP sent: [REDACTED:otp-6digit]           [otp-6digit]
+line 156    card [REDACTED:credit-card] processed     [credit-card]
+
+────────────────────────────────────────────────────────
+logcloak scan summary
+────────────────────────────────────────────────────────
+Total lines:     1234
+Lines with PII:  3 (0.2%)
+Pattern hits:
+  email:               1
+  otp-6digit:          1
+  credit-card:         1
+────────────────────────────────────────────────────────
+
+Protect these logs → kubectl label namespace <ns> logcloak.io/inject=true
+```
+
+scan runs all 10 built-in patterns and highlights matched lines in yellow. Lines without PII are not shown. Install the CLI binary from the [GitHub releases page](https://github.com/1mr0-tech/logcloak/releases).
 
 ---
 

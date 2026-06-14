@@ -5,6 +5,7 @@ import "strings"
 // ParseAnnotations extracts PatternSpecs from pod annotations.
 // logcloak.io/patterns: "email,otp-6digit"   → builtin patterns by name
 // logcloak.io/regex-<name>: "<pattern>"       → custom regex patterns
+// logcloak.io/fields: "password,token"        → JSON field-name masking
 func ParseAnnotations(annotations map[string]string) []PatternSpec {
 	var specs []PatternSpec
 	if annotations == nil {
@@ -23,6 +24,14 @@ func ParseAnnotations(annotations map[string]string) []PatternSpec {
 			name := strings.TrimPrefix(k, "logcloak.io/regex-")
 			if name != "" && v != "" {
 				specs = append(specs, PatternSpec{Name: name, Regex: v})
+			}
+		}
+	}
+	if fields, ok := annotations["logcloak.io/fields"]; ok {
+		for _, fname := range strings.Split(fields, ",") {
+			fname = strings.TrimSpace(fname)
+			if fname != "" {
+				specs = append(specs, PatternSpec{Name: "field:" + fname, Field: fname})
 			}
 		}
 	}

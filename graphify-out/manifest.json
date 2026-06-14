@@ -1,0 +1,307 @@
+{
+  ".claude/settings.local.json": {
+    "mtime": 1777544038.2165937,
+    "ast_hash": "6eb5dad329b474dcae4bf1bc9955d211",
+    "semantic_hash": ""
+  },
+  "cmd/cli/main.go": {
+    "mtime": 1781406576.7213297,
+    "ast_hash": "e5fcfaa0ec6f1e013f850c29c7ff2b59",
+    "semantic_hash": ""
+  },
+  "cmd/controller/main.go": {
+    "mtime": 1777463746.0,
+    "ast_hash": "721f17a765704be357fc732bc172fe2c",
+    "semantic_hash": ""
+  },
+  "cmd/sidecar/main.go": {
+    "mtime": 1777573790.509649,
+    "ast_hash": "de0a0d4c7c993343988b7c2a91095f74",
+    "semantic_hash": ""
+  },
+  "cmd/webhook/main.go": {
+    "mtime": 1777997771.596056,
+    "ast_hash": "7a6004810e26e6565c3d90446eb52f1e",
+    "semantic_hash": ""
+  },
+  "pkg/masker/masker.go": {
+    "mtime": 1781406475.6252017,
+    "ast_hash": "9cecdb326b5550fd41c13f54af86c44b",
+    "semantic_hash": ""
+  },
+  "pkg/masker/masker_test.go": {
+    "mtime": 1777997844.9666564,
+    "ast_hash": "ee91c68b77ae68d3f41d27fadef54003",
+    "semantic_hash": ""
+  },
+  "pkg/metrics/metrics.go": {
+    "mtime": 1777463746.0,
+    "ast_hash": "fea444169d9f684842e55f0c1058117d",
+    "semantic_hash": ""
+  },
+  "pkg/patterns/patterns.go": {
+    "mtime": 1777463746.0,
+    "ast_hash": "b9d81ccf4de89c996980c084abd05649",
+    "semantic_hash": ""
+  },
+  "pkg/patterns/patterns_test.go": {
+    "mtime": 1777463746.0,
+    "ast_hash": "7e609eca8b93fbd8386ae255768c0923",
+    "semantic_hash": ""
+  },
+  "pkg/regex/validator.go": {
+    "mtime": 1777463746.0,
+    "ast_hash": "bfe02253927904f2f0008e2a93f23b33",
+    "semantic_hash": ""
+  },
+  "pkg/regex/validator_test.go": {
+    "mtime": 1777523957.3858225,
+    "ast_hash": "dada52243b28908d326a9789be677bf9",
+    "semantic_hash": ""
+  },
+  "pkg/rules/annotation.go": {
+    "mtime": 1781406530.3558326,
+    "ast_hash": "1ecb2fbbb7e2c796e8e720c9ba8bd746",
+    "semantic_hash": ""
+  },
+  "pkg/rules/merge.go": {
+    "mtime": 1781406518.9807453,
+    "ast_hash": "de8f33e6f8f97a396fe4272cd0f0209d",
+    "semantic_hash": ""
+  },
+  "pkg/rules/merge_test.go": {
+    "mtime": 1777523948.2145498,
+    "ast_hash": "33d7d5e6264657d197975980f418005e",
+    "semantic_hash": ""
+  },
+  "pkg/rules/types.go": {
+    "mtime": 1781406489.2325673,
+    "ast_hash": "7976351ec6b9206749f9e85c11b8cfd1",
+    "semantic_hash": ""
+  },
+  "pkg/sentinel/sentinel.go": {
+    "mtime": 1777463746.0,
+    "ast_hash": "c151fb31c9da7e5f35cc7b431b0b3bcc",
+    "semantic_hash": ""
+  },
+  "pkg/sentinel/sentinel_test.go": {
+    "mtime": 1777463746.0,
+    "ast_hash": "e583a88197caafe27c9ae53e29e6a5e5",
+    "semantic_hash": ""
+  },
+  "pkg/webhook/handler.go": {
+    "mtime": 1781406542.312931,
+    "ast_hash": "ee8e26ce30d8011906766a3df610f57a",
+    "semantic_hash": ""
+  },
+  "pkg/webhook/inject.go": {
+    "mtime": 1777463746.0,
+    "ast_hash": "f0518c434771087a9c61974e94d4c0d8",
+    "semantic_hash": ""
+  },
+  "pkg/webhook/inject_test.go": {
+    "mtime": 1777524045.0335329,
+    "ast_hash": "05c933522ee85ff25e39be66080a8378",
+    "semantic_hash": ""
+  },
+  "pkg/webhook/patch.go": {
+    "mtime": 1777463746.0,
+    "ast_hash": "cc9ef04edd2f83d0af166c4a359257e0",
+    "semantic_hash": ""
+  },
+  "pkg/webhook/tls.go": {
+    "mtime": 1777997766.2732239,
+    "ast_hash": "7e30a20f91675ce1f89e53efa17db4c4",
+    "semantic_hash": ""
+  },
+  "test/integration/suite_test.go": {
+    "mtime": 1777524247.804335,
+    "ast_hash": "d5721ff827ef1fb912cd00d94855af32",
+    "semantic_hash": ""
+  },
+  "test/integration/webhook_test.go": {
+    "mtime": 1777540932.0809662,
+    "ast_hash": "80bfa2af33c39fede53ea1ffc9a2fd46",
+    "semantic_hash": ""
+  },
+  ".github/workflows/ci.yaml": {
+    "mtime": 1777463746.0,
+    "ast_hash": "b23fc34da0a2db0551a90788b32d3299",
+    "semantic_hash": ""
+  },
+  ".github/workflows/release.yaml": {
+    "mtime": 1777463746.0,
+    "ast_hash": "24573becbed25b96034bea0b5cb35725",
+    "semantic_hash": ""
+  },
+  "CONTRIBUTING.md": {
+    "mtime": 1777541289.4622865,
+    "ast_hash": "926c7008aa630807ba9413510b9932f8",
+    "semantic_hash": ""
+  },
+  "GUIDE.md": {
+    "mtime": 1781407118.719663,
+    "ast_hash": "017b7029a376c024029344f6531fec7e",
+    "semantic_hash": ""
+  },
+  "README.md": {
+    "mtime": 1781406896.915699,
+    "ast_hash": "4912ffd02f7becb5f3a73adb2d7b02b7",
+    "semantic_hash": ""
+  },
+  "ROADMAP.md": {
+    "mtime": 1777542367.3635235,
+    "ast_hash": "9e07a9479602e35b468146ad52078d85",
+    "semantic_hash": ""
+  },
+  "SECURITY.md": {
+    "mtime": 1777541286.0858345,
+    "ast_hash": "16741a5d00689d2d023737925361328c",
+    "semantic_hash": ""
+  },
+  "charts/logcloak/Chart.yaml": {
+    "mtime": 1777463746.0,
+    "ast_hash": "8985faaaa1bb5e5c211ff61a00f98dc2",
+    "semantic_hash": ""
+  },
+  "charts/logcloak/crds/maskingpolicies.logcloak.io.yaml": {
+    "mtime": 1777463746.0,
+    "ast_hash": "ff67839b8b3a36a44599a9f1eda5b203",
+    "semantic_hash": ""
+  },
+  "charts/logcloak/templates/clusterrole-admin.yaml": {
+    "mtime": 1777463746.0,
+    "ast_hash": "1a99ddca33aeca931985c21ebd4c6f2f",
+    "semantic_hash": ""
+  },
+  "charts/logcloak/templates/clusterrole.yaml": {
+    "mtime": 1777997821.644085,
+    "ast_hash": "97ade4bee4a9007a5a27cc344f80c794",
+    "semantic_hash": ""
+  },
+  "charts/logcloak/templates/clusterrolebinding.yaml": {
+    "mtime": 1777463746.0,
+    "ast_hash": "7edef3318104b1a1acd716b752457ffd",
+    "semantic_hash": ""
+  },
+  "charts/logcloak/templates/deployment.yaml": {
+    "mtime": 1777463746.0,
+    "ast_hash": "066151ec0a3eaa332aa98c50f4bb87a6",
+    "semantic_hash": ""
+  },
+  "charts/logcloak/templates/mutatingwebhookconfiguration.yaml": {
+    "mtime": 1777571487.0877118,
+    "ast_hash": "65c8fbfefb68a5bc0c18699b29d6ed9b",
+    "semantic_hash": ""
+  },
+  "charts/logcloak/templates/networkpolicy.yaml": {
+    "mtime": 1777463746.0,
+    "ast_hash": "616fba73461bcf164db91883d5a42bb8",
+    "semantic_hash": ""
+  },
+  "charts/logcloak/templates/role.yaml": {
+    "mtime": 1777997825.933446,
+    "ast_hash": "6df5d787f2f1e5703973b77dba3d6d90",
+    "semantic_hash": ""
+  },
+  "charts/logcloak/templates/rolebinding.yaml": {
+    "mtime": 1777997831.0517993,
+    "ast_hash": "ea5561025901d7877f4923836eeaabda",
+    "semantic_hash": ""
+  },
+  "charts/logcloak/templates/service.yaml": {
+    "mtime": 1777463746.0,
+    "ast_hash": "1410037336145dcdd290a6e46edb4c11",
+    "semantic_hash": ""
+  },
+  "charts/logcloak/templates/serviceaccount.yaml": {
+    "mtime": 1777463746.0,
+    "ast_hash": "9ac132769010791c84ed8fe415cda9ee",
+    "semantic_hash": ""
+  },
+  "charts/logcloak/tests/webhook-smoke-test.yaml": {
+    "mtime": 1777463746.0,
+    "ast_hash": "95d6c84f31b24ed379367717c009411b",
+    "semantic_hash": ""
+  },
+  "charts/logcloak/values.yaml": {
+    "mtime": 1777997836.2980118,
+    "ast_hash": "9b7c6e25b7af19e99078346cc9a412e0",
+    "semantic_hash": ""
+  },
+  "docs/failure-modes.md": {
+    "mtime": 1777542299.0040395,
+    "ast_hash": "1bb42a153486254bbea1df895c130bf9",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/plans/2026-04-22-logcloak-implementation.md": {
+    "mtime": 1777463746.0,
+    "ast_hash": "07b92114f273e5ac7236618497f9d647",
+    "semantic_hash": ""
+  },
+  "docs/superpowers/specs/2026-04-22-log-masker-design.md": {
+    "mtime": 1777463746.0,
+    "ast_hash": "106554df5d3a3ace59d98729a0e2027a",
+    "semantic_hash": ""
+  },
+  "documentation.md": {
+    "mtime": 1777463746.0,
+    "ast_hash": "9b8ad5f9008a0c08d54906d545840cce",
+    "semantic_hash": ""
+  },
+  "test/k8s/README.md": {
+    "mtime": 1777542308.2527106,
+    "ast_hash": "aa934c52bf6859871ba6ee876ee3c861",
+    "semantic_hash": ""
+  },
+  "test/k8s/app-with-postgres.yaml": {
+    "mtime": 1777523620.630796,
+    "ast_hash": "869a5803c647816e3db3884ff760edc9",
+    "semantic_hash": ""
+  },
+  "test/k8s/distroless-app.yaml": {
+    "mtime": 1777542301.9631116,
+    "ast_hash": "386d3db89b169585c589f1f84d10059a",
+    "semantic_hash": ""
+  },
+  "test/k8s/jvm-app.yaml": {
+    "mtime": 1777542303.9618592,
+    "ast_hash": "e363a196a9f92864ac0e92f0d307b2aa",
+    "semantic_hash": ""
+  },
+  "test/k8s/masking-policy.yaml": {
+    "mtime": 1777523610.0875378,
+    "ast_hash": "7124786bdc063b13891dd858c2aabfde",
+    "semantic_hash": ""
+  },
+  "test/k8s/stress-batch.yaml": {
+    "mtime": 1777542306.2676687,
+    "ast_hash": "0a32d92e73cf47a39d121f1f7cd37586",
+    "semantic_hash": ""
+  },
+  "test/k8s/stress-pod.yaml": {
+    "mtime": 1777524071.4858673,
+    "ast_hash": "6b4578cf50c05d76c31e6bd522f34c94",
+    "semantic_hash": ""
+  },
+  ".claude/settings.json": {
+    "mtime": 1781406217.022945,
+    "ast_hash": "e1073342e958ac9f00716938c8f165e3",
+    "semantic_hash": ""
+  },
+  "pkg/masker/json.go": {
+    "mtime": 1781406786.1015625,
+    "ast_hash": "ee33994d3e9300092b4c822c829e7fcd",
+    "semantic_hash": ""
+  },
+  "pkg/masker/json_test.go": {
+    "mtime": 1781406606.2885246,
+    "ast_hash": "330c4c380e98aabd441ae693b3773a56",
+    "semantic_hash": ""
+  },
+  "CLAUDE.md": {
+    "mtime": 1781406217.0227096,
+    "ast_hash": "82efb97a359f5c7290bf2513d14686be",
+    "semantic_hash": ""
+  }
+}

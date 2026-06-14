@@ -30,6 +30,7 @@ type PatternSpec struct {
 	Name    string `json:"name"`
 	Builtin string `json:"builtin,omitempty"`
 	Regex   string `json:"regex,omitempty"`
+	Field   string `json:"field,omitempty"` // mask JSON fields with this name
 }
 
 type MaskingPolicyList struct {

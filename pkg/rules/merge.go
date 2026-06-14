@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"regexp"
+	"strings"
 
 	"github.com/1mr0-tech/logcloak/pkg/masker"
 	"github.com/1mr0-tech/logcloak/pkg/patterns"
@@ -13,8 +14,9 @@ import (
 // SerializedRule is the wire format for LOGCLOAK_RULES env var.
 type SerializedRule struct {
 	Name    string `json:"name"`
-	Pattern string `json:"pattern"`
+	Pattern string `json:"pattern,omitempty"` // empty for field rules
 	Replace string `json:"replace"`
+	Field   string `json:"field,omitempty"`
 }
 
 // Merge combines MaskingPolicy rules and pod annotation rules into compiled masker.Rules.
@@ -58,6 +60,15 @@ func Merge(policies []MaskingPolicy, annotationSpecs []PatternSpec) ([]masker.Ru
 }
 
 func compileSpec(spec PatternSpec, replace string) (masker.Rule, error) {
+	if spec.Field != "" {
+		if spec.Builtin != "" || spec.Regex != "" {
+			return masker.Rule{}, fmt.Errorf("pattern %q: field cannot be combined with builtin or regex", spec.Name)
+		}
+		if strings.TrimSpace(spec.Field) == "" {
+			return masker.Rule{}, fmt.Errorf("pattern %q has empty field name", spec.Name)
+		}
+		return masker.Rule{Name: spec.Name, Field: spec.Field, Replace: replace}, nil
+	}
 	if spec.Builtin != "" {
 		b, ok := patterns.Get(spec.Builtin)
 		if !ok {
@@ -75,18 +86,18 @@ func compileSpec(spec PatternSpec, replace string) (masker.Rule, error) {
 		}
 		return masker.Rule{Name: spec.Name, Pattern: re, Replace: replace}, nil
 	}
-	return masker.Rule{}, fmt.Errorf("pattern %q has neither builtin nor regex", spec.Name)
+	return masker.Rule{}, fmt.Errorf("pattern %q has neither builtin, regex, nor field", spec.Name)
 }
 
 // Serialize converts compiled rules into the JSON string injected as LOGCLOAK_RULES.
 func Serialize(rules []masker.Rule) (string, error) {
 	var sr []SerializedRule
 	for _, r := range rules {
-		sr = append(sr, SerializedRule{
-			Name:    r.Name,
-			Pattern: r.Pattern.String(),
-			Replace: r.Replace,
-		})
+		s := SerializedRule{Name: r.Name, Replace: r.Replace, Field: r.Field}
+		if r.Pattern != nil {
+			s.Pattern = r.Pattern.String()
+		}
+		sr = append(sr, s)
 	}
 	b, err := json.Marshal(sr)
 	return string(b), err
@@ -103,11 +114,15 @@ func Deserialize(jsonStr string) ([]masker.Rule, error) {
 	}
 	var result []masker.Rule
 	for _, s := range sr {
-		re, err := regexp.Compile(s.Pattern)
-		if err != nil {
-			return nil, fmt.Errorf("recompile pattern %q: %w", s.Name, err)
+		rule := masker.Rule{Name: s.Name, Replace: s.Replace, Field: s.Field}
+		if s.Pattern != "" {
+			re, err := regexp.Compile(s.Pattern)
+			if err != nil {
+				return nil, fmt.Errorf("recompile pattern %q: %w", s.Name, err)
+			}
+			rule.Pattern = re
 		}
-		result = append(result, masker.Rule{Name: s.Name, Pattern: re, Replace: s.Replace})
+		result = append(result, rule)
 	}
 	return result, nil
 }

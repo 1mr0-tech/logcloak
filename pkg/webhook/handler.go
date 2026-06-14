@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	admissionv1 "k8s.io/api/admission/v1"
 	corev1 "k8s.io/api/core/v1"
@@ -72,6 +73,15 @@ func (h *Handler) mutate(ctx context.Context, req *admissionv1.AdmissionRequest)
 			if err := regex.Validate(v); err != nil {
 				metrics.WebhookAdmissions.WithLabelValues("rejected").Inc()
 				return deny(fmt.Sprintf("invalid regex in annotation %q: %v", k, err))
+			}
+		}
+	}
+
+	if fieldsStr, ok := pod.Annotations["logcloak.io/fields"]; ok {
+		for _, f := range strings.Split(fieldsStr, ",") {
+			if strings.TrimSpace(f) == "" {
+				metrics.WebhookAdmissions.WithLabelValues("rejected").Inc()
+				return deny("empty field name in logcloak.io/fields annotation")
 			}
 		}
 	}

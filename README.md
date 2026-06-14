@@ -106,6 +106,79 @@ kubectl logs my-pod
 | `aadhaar` | 12-digit Aadhaar numbers |
 | `pan-in` | Indian PAN card format |
 
+## JSON field masking
+
+Most production services log in JSON. logcloak can mask specific field names in structured JSON logs — regardless of value format — using the `field` pattern type.
+
+```yaml
+# MaskingPolicy — mask by JSON field name
+apiVersion: logcloak.io/v1alpha1
+kind: MaskingPolicy
+metadata:
+  name: json-pii
+  namespace: production
+spec:
+  patterns:
+    - name: password-field
+      field: password
+    - name: token-field
+      field: api_token
+    - name: card-field
+      field: card_number
+```
+
+```yaml
+# Pod annotation shorthand
+metadata:
+  annotations:
+    logcloak.io/fields: "password,token,api_key,card_number"
+```
+
+**Before:**
+```json
+{"level":"info","user":"alice","password":"s3cr3t","action":"login"}
+```
+**After:**
+```json
+{"level":"info","user":"alice","password":"[REDACTED]","action":"login"}
+```
+
+Field masking recurses into nested objects and arrays. It applies before regex rules, so both can be active at once.
+
+---
+
+## Audit your logs before deploying
+
+Use `logcloak scan` to check what PII is currently leaking from any log source — no Kubernetes cluster required:
+
+```bash
+# Audit live pod logs
+kubectl logs my-pod | logcloak scan
+
+# Audit a log file
+logcloak scan /var/log/app.log
+```
+
+**Example output:**
+```
+line 42     user [REDACTED:email] placed order  [email]
+line 97     OTP sent: [REDACTED:otp-6digit]     [otp-6digit]
+
+────────────────────────────────────────────────────────
+logcloak scan summary
+────────────────────────────────────────────────────────
+Total lines:     1234
+Lines with PII:  2 (0.2%)
+Pattern hits:
+  email:               1
+  otp-6digit:          1
+────────────────────────────────────────────────────────
+
+Protect these logs → kubectl label namespace <ns> logcloak.io/inject=true
+```
+
+---
+
 ## Cluster-wide policies (MaskingPolicy CRD)
 
 ```yaml
@@ -168,6 +241,27 @@ helm uninstall logcloak -n logcloak
 kubectl delete crd maskingpolicies.logcloak.io
 kubectl label namespace <your-namespace> logcloak.io/inject-
 ```
+
+## Why logcloak vs alternatives
+
+Every other log masking tool — Vector, Fluent Bit, Cribl, Datadog agent scrubbing, AWS CloudWatch masking — operates **after** logs have been written to the node filesystem. They mask in transit to a destination.
+
+That means:
+- `kubectl logs` shows **raw PII** (it reads the container runtime directly, bypassing collectors)
+- `/var/log/containers/` contains raw PII for the window before the collector reads it
+- If the collector crashes, raw PII sits on disk indefinitely
+
+logcloak intercepts **before** the container runtime captures anything. Raw PII never touches disk.
+
+| | logcloak | Vector / Fluent Bit | Cribl | AWS CloudWatch |
+|---|---|---|---|---|
+| `kubectl logs` is masked | ✅ | ❌ | ❌ | ❌ |
+| Raw PII ever on disk | ❌ Never | ✅ Brief window | ✅ Brief window | ✅ Yes |
+| Per-pod masking rules | ✅ CRD + annotations | ❌ | ❌ | ❌ |
+| Fail-closed by default | ✅ | ❌ | ❌ | ❌ |
+| RE2 / ReDoS-safe | ✅ | ❌ | ❌ | N/A |
+| Pricing | Free (MIT) | Free / $0.20+/GB | $50K+/yr | $0.12/GB |
+| `helm install` | ✅ one command | ❌ DaemonSet + config | ❌ separate platform | ❌ cloud only |
 
 ## License
 
