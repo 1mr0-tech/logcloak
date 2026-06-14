@@ -15,4 +15,10 @@ spec:
       builtin: jwt
     - name: phone-e164
       builtin: phone-e164
+    - name: uuid
+      builtin: uuid
+    - name: ssn
+      builtin: ssn
+    - name: phone-us
+      builtin: phone-us
   redactWith: "[REDACTED]"

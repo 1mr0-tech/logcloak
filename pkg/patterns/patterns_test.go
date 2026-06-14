@@ -68,11 +68,22 @@ func TestPhoneE164_NoMatch(t *testing.T) {
 
 func TestPhoneUS_Matches(t *testing.T) {
 	p, _ := patterns.Get("phone-us")
-	cases := []string{"202-555-0104", "(202) 555-0104", "+12025550104"}
+	// +1 compact form (+12025550104) is handled by phone-e164; phone-us covers
+	// domestic formats with separators or standalone 10-digit numbers.
+	cases := []string{"202-555-0104", "(202) 555-0104", "2025550104"}
 	for _, c := range cases {
 		if !p.Pattern.MatchString(c) {
 			t.Errorf("phone-us should match %q", c)
 		}
+	}
+}
+
+func TestPhoneUS_NoFalsePositiveInUUID(t *testing.T) {
+	p, _ := patterns.Get("phone-us")
+	// Digits embedded in a UUID must not be matched as a phone number.
+	uuid := "550e8400-e29b-41d4-a716-446655440000"
+	if p.Pattern.MatchString(uuid) {
+		t.Errorf("phone-us must not match digit sequences within a UUID: %q", uuid)
 	}
 }
 
