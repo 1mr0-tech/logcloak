@@ -103,7 +103,7 @@ These are real gaps. Do not start new features before the Phase 1 stability work
 - [ ] Helm test pod that validates masking end-to-end (not just `/healthz`)
 - [ ] Cosign image signing in release pipeline
 - [ ] `ServiceMonitor` CRD for Prometheus scraping
-- [ ] Structured log support (JSON field-level masking, not just regex on raw lines)
+- [x] Structured log support (JSON field-level masking via `logcloak.io/fields` annotation and `field:` MaskingPolicy spec — shipped in v0.4.0)
 - [ ] OpenTelemetry trace ID passthrough (don't mask trace IDs that look like UUIDs)
 - [ ] Annual cert rotation CronJob for self-signed TLS mode
 
