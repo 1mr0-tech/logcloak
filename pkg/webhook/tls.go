@@ -50,8 +50,14 @@ func EnsureTLS(ctx context.Context, kube kubernetes.Interface, namespace, servic
 		if err != nil {
 			return nil, nil, fmt.Errorf("generate cert: %w", err)
 		}
-		if storeErr := storeTLSSecret(ctx, kube, namespace, bundle); storeErr != nil {
+		stored, storeErr := storeTLSSecret(ctx, kube, namespace, bundle)
+		if storeErr != nil {
 			return nil, nil, fmt.Errorf("store tls secret: %w", storeErr)
+		}
+		// Another replica won the race and already wrote a cert — use theirs so
+		// all replicas serve the same cert and the caBundle patch stays consistent.
+		if stored != nil {
+			bundle = *stored
 		}
 	}
 
@@ -122,7 +128,10 @@ func generateSelfSigned(serviceName, namespace string) (TLSBundle, error) {
 	return TLSBundle{CACert: caPEM, TLSCert: certPEM, TLSKey: keyPEM}, nil
 }
 
-func storeTLSSecret(ctx context.Context, kube kubernetes.Interface, namespace string, b TLSBundle) error {
+// storeTLSSecret creates the TLS secret. If it already exists (another replica won
+// the race), it reads and returns the existing bundle so all replicas share one cert.
+// Returns (nil, nil) on successful create; (*TLSBundle, nil) when the secret already existed.
+func storeTLSSecret(ctx context.Context, kube kubernetes.Interface, namespace string, b TLSBundle) (*TLSBundle, error) {
 	secret := &corev1.Secret{
 		ObjectMeta: metav1.ObjectMeta{Name: tlsSecretName, Namespace: namespace},
 		Data: map[string][]byte{
@@ -132,10 +141,22 @@ func storeTLSSecret(ctx context.Context, kube kubernetes.Interface, namespace st
 		},
 	}
 	_, err := kube.CoreV1().Secrets(namespace).Create(ctx, secret, metav1.CreateOptions{})
-	if errors.IsAlreadyExists(err) {
-		_, err = kube.CoreV1().Secrets(namespace).Update(ctx, secret, metav1.UpdateOptions{})
+	if err == nil {
+		return nil, nil
 	}
-	return err
+	if !errors.IsAlreadyExists(err) {
+		return nil, err
+	}
+	existing, err := kube.CoreV1().Secrets(namespace).Get(ctx, tlsSecretName, metav1.GetOptions{})
+	if err != nil {
+		return nil, fmt.Errorf("read existing tls secret: %w", err)
+	}
+	existingBundle := &TLSBundle{
+		CACert:  existing.Data["ca.crt"],
+		TLSCert: existing.Data["tls.crt"],
+		TLSKey:  existing.Data["tls.key"],
+	}
+	return existingBundle, nil
 }
 
 // PatchWebhookCABundle updates the caBundle field in a MutatingWebhookConfiguration.
