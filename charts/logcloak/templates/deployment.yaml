@@ -17,6 +17,9 @@ spec:
         app.kubernetes.io/name: logcloak
     spec:
       serviceAccountName: {{ .Values.serviceAccount.name }}
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
       containers:
       - name: webhook
         image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"

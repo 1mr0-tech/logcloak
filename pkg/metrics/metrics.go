@@ -56,12 +56,17 @@ var (
 		Name: "logcloak_rule_cache_size",
 		Help: "Number of pod rule sets currently cached.",
 	})
+
+	TLSCertExpiry = prometheus.NewGauge(prometheus.GaugeOpts{
+		Name: "logcloak_tls_cert_expiry_seconds",
+		Help: "Unix timestamp when the webhook TLS certificate expires. Alert when under 2592000 (30 days).",
+	})
 )
 
 func MustRegister() {
 	prometheus.MustRegister(
 		ProcessedLines, MaskedLines, DroppedLines,
 		ProcessingDuration, WebhookAdmissions, WebhookErrors,
-		RuleCacheSize,
+		RuleCacheSize, TLSCertExpiry,
 	)
 }

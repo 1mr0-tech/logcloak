@@ -42,3 +42,7 @@ serviceAccount:
 namespaceSelector:
   matchLabels:
     logcloak.io/inject: "true"
+
+podDisruptionBudget:
+  enabled: true
+  minAvailable: 1

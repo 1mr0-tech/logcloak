@@ -94,6 +94,7 @@ func BuildPatch(pod corev1.Pod, compiled []masker.Rule, sidecarImage string) ([]
 		SecurityContext: &corev1.SecurityContext{
 			ReadOnlyRootFilesystem:   boolPtr(true),
 			AllowPrivilegeEscalation: boolPtr(false),
+			SeccompProfile:           &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
 		},
 	}
 	if len(pod.Spec.InitContainers) == 0 {
@@ -189,6 +190,7 @@ func sidecarContainer(image, rulesJSON string) corev1.Container {
 			AllowPrivilegeEscalation: boolPtr(false),
 			RunAsNonRoot:             boolPtr(true),
 			RunAsUser:                int64Ptr(65534),
+			SeccompProfile:           &corev1.SeccompProfile{Type: corev1.SeccompProfileTypeRuntimeDefault},
 		},
 	}
 }

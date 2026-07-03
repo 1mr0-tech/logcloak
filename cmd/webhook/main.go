@@ -70,15 +70,17 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer cancel()
 
-	tlsCfg, caCert, err := webhook.EnsureTLS(ctx, kube, namespace, serviceName)
+	tlsMgr, err := webhook.NewTLSManager(ctx, kube, namespace, serviceName)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "TLS setup: %v\n", err)
 		os.Exit(1)
 	}
 
-	if err := webhook.PatchWebhookCABundle(ctx, kube, webhookName, caCert); err != nil {
+	if err := webhook.PatchWebhookCABundle(ctx, kube, webhookName, tlsMgr.CACert()); err != nil {
 		fmt.Fprintf(os.Stderr, "patch webhook caBundle: %v (continuing)\n", err)
 	}
+
+	go tlsMgr.WatchAndRotate(ctx, webhookName)
 
 	h := &webhook.Handler{Client: ctrlClient, SidecarImage: sidecarImage}
 
@@ -94,7 +96,7 @@ func main() {
 	srv := &http.Server{
 		Addr:              ":8443",
 		Handler:           mux,
-		TLSConfig:         tlsCfg,
+		TLSConfig:         tlsMgr.Config(),
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       30 * time.Second,
 		WriteTimeout:      30 * time.Second,
