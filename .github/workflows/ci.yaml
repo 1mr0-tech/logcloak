@@ -10,6 +10,17 @@ env:
   FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
+  dco:
+    name: DCO Sign-off
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    steps:
+    - uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+    - name: Check DCO sign-off
+      uses: christophebedard/dco-check@v1.0.2
+
   unit:
     name: Unit Tests
     runs-on: ubuntu-latest

@@ -7,8 +7,12 @@
 !SECURITY.md
 !CONTRIBUTING.md
 !CHANGELOG.md
+!CODE_OF_CONDUCT.md
+!GOVERNANCE.md
+!ADOPTERS.md
 docs/superpowers/
 !docs/*.md
+!.github/**/*.md
 .claude/
 .worktrees/
 
