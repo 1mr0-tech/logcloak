@@ -17,6 +17,8 @@ jobs:
       contents: read
       packages: write
       security-events: write
+      id-token: write      # cosign keyless signing and provenance attestation
+      attestations: write  # SLSA provenance via actions/attest-build-provenance
     strategy:
       fail-fast: false
       matrix:
@@ -38,6 +40,7 @@ jobs:
       run: echo "VERSION=${GITHUB_REF_NAME#v}" >> $GITHUB_OUTPUT
 
     - name: Build and push ${{ matrix.binary }}
+      id: build
       uses: docker/build-push-action@v6
       with:
         context: .
@@ -50,6 +53,28 @@ jobs:
         tags: |
           ${{ env.REGISTRY }}/logcloak-${{ matrix.binary }}:${{ steps.version.outputs.VERSION }}
           ${{ env.REGISTRY }}/logcloak-${{ matrix.binary }}:latest
+
+    - name: Install Cosign
+      uses: sigstore/cosign-installer@v3
+
+    - name: Sign image (keyless)
+      run: |
+        cosign sign --yes \
+          ${{ env.REGISTRY }}/logcloak-${{ matrix.binary }}@${{ steps.build.outputs.digest }}
+
+    - name: Generate SBOM
+      uses: anchore/sbom-action@v0
+      with:
+        image: ${{ env.REGISTRY }}/logcloak-${{ matrix.binary }}:${{ steps.version.outputs.VERSION }}
+        artifact-name: sbom-${{ matrix.binary }}.spdx.json
+        output-file: /tmp/sbom-${{ matrix.binary }}.spdx.json
+
+    - name: Attest image provenance (SLSA)
+      uses: actions/attest-build-provenance@v2
+      with:
+        subject-name: ${{ env.REGISTRY }}/logcloak-${{ matrix.binary }}
+        subject-digest: ${{ steps.build.outputs.digest }}
+        push-to-registry: true
 
     - name: Install Trivy
       run: |
@@ -119,6 +144,8 @@ jobs:
     needs: [helm-publish]
     permissions:
       contents: write
+      id-token: write
+      attestations: write
     steps:
     - uses: actions/checkout@v4
 
@@ -142,8 +169,22 @@ jobs:
           done
         done
 
+    - name: Attest binary provenance (SLSA)
+      uses: actions/attest-build-provenance@v2
+      with:
+        subject-path: dist/logcloak-*
+
+    - name: Download image SBOMs
+      uses: actions/download-artifact@v4
+      with:
+        pattern: sbom-*.spdx.json
+        path: dist/sboms
+        merge-multiple: true
+
     - name: Create GitHub release
       uses: softprops/action-gh-release@v2
       with:
-        files: dist/logcloak-*
+        files: |
+          dist/logcloak-*
+          dist/sboms/*.spdx.json
         generate_release_notes: true
