@@ -11,8 +11,8 @@ import (
 	"encoding/base64"
 	"encoding/pem"
 	"fmt"
+	"log/slog"
 	"math/big"
-	"os"
 	"sync"
 	"time"
 
@@ -43,11 +43,12 @@ type TLSManager struct {
 	kube        kubernetes.Interface
 	namespace   string
 	serviceName string
+	log         *slog.Logger
 }
 
 // NewTLSManager loads or generates TLS credentials and returns a manager
 // ready to serve and self-rotate. Call WatchAndRotate in a goroutine after construction.
-func NewTLSManager(ctx context.Context, kube kubernetes.Interface, namespace, serviceName string) (*TLSManager, error) {
+func NewTLSManager(ctx context.Context, kube kubernetes.Interface, namespace, serviceName string, log *slog.Logger) (*TLSManager, error) {
 	secret, err := kube.CoreV1().Secrets(namespace).Get(ctx, tlsSecretName, metav1.GetOptions{})
 	if err != nil && !errors.IsNotFound(err) {
 		return nil, fmt.Errorf("get tls secret: %w", err)
@@ -86,6 +87,7 @@ func NewTLSManager(ctx context.Context, kube kubernetes.Interface, namespace, se
 		kube:        kube,
 		namespace:   namespace,
 		serviceName: serviceName,
+		log:         log,
 	}
 	mgr.updateExpiryMetric()
 	return mgr, nil
@@ -122,7 +124,7 @@ func (m *TLSManager) WatchAndRotate(ctx context.Context, webhookName string) {
 			m.updateExpiryMetric()
 			if m.nearExpiry() {
 				if err := m.rotate(ctx, webhookName); err != nil {
-					fmt.Fprintf(os.Stderr, "tls rotation failed: %v\n", err)
+					m.log.Error("tls rotation failed", "error", err)
 				}
 			}
 		}
@@ -175,7 +177,7 @@ func (m *TLSManager) rotate(ctx context.Context, webhookName string) error {
 	m.mu.Unlock()
 
 	m.updateExpiryMetric()
-	fmt.Fprintf(os.Stderr, "tls certificate rotated\n")
+	m.log.Info("tls certificate rotated")
 	return nil
 }
 

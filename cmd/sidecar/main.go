@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"time"
@@ -21,6 +22,9 @@ const (
 )
 
 func main() {
+	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
+	slog.SetDefault(logger)
+
 	metrics.MustRegister()
 
 	podName := os.Getenv("POD_NAME")
@@ -31,18 +35,18 @@ func main() {
 
 	compiled, err := rules.Deserialize(os.Getenv("LOGCLOAK_RULES"))
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "[logcloak] failed to parse rules: %v\n", err)
-		runDropAll(podName, podNS, "rules_parse_error")
+		logger.Error("failed to parse rules", "error", err)
+		runDropAll(logger, podName, podNS, "rules_parse_error")
 		return
 	}
 
 	m := masker.New(compiled)
 
-	go serveMetrics()
+	go serveMetrics(logger)
 
 	fifo, err := os.Open(fifoPipe)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "[logcloak] failed to open FIFO %s: %v\n", fifoPipe, err)
+		logger.Error("failed to open FIFO", "path", fifoPipe, "error", err)
 		os.Exit(1)
 	}
 	defer fifo.Close() //nolint:errcheck
@@ -65,15 +69,15 @@ func main() {
 	}
 
 	if err := scanner.Err(); err != nil {
-		fmt.Fprintf(os.Stderr, "[logcloak] scanner error: %v\n", err)
+		logger.Error("scanner error", "error", err)
 		os.Exit(1)
 	}
 }
 
-func runDropAll(podName, podNS, reason string) {
+func runDropAll(logger *slog.Logger, podName, podNS, reason string) {
 	fifo, err := os.Open(fifoPipe)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "[logcloak] cannot open FIFO in drop-all mode: %v\n", err)
+		logger.Error("cannot open FIFO in drop-all mode", "error", err)
 		os.Exit(1)
 	}
 	defer fifo.Close() //nolint:errcheck
@@ -85,7 +89,7 @@ func runDropAll(podName, podNS, reason string) {
 	}
 }
 
-func serveMetrics() {
+func serveMetrics(logger *slog.Logger) {
 	mux := http.NewServeMux()
 	mux.Handle("/metrics", promhttp.Handler())
 	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
@@ -96,6 +100,6 @@ func serveMetrics() {
 		port = "9090"
 	}
 	if err := http.ListenAndServe(":"+port, mux); err != nil {
-		fmt.Fprintf(os.Stderr, "[logcloak] metrics server error: %v\n", err)
+		logger.Error("metrics server error", "error", err)
 	}
 }

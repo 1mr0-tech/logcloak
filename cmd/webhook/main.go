@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"log/slog"
 	"net/http"
 	"os"
 	"os/signal"
@@ -23,7 +23,10 @@ import (
 var version = "dev"
 
 func main() {
-	fmt.Fprintf(os.Stderr, "logcloak-webhook %s starting\n", version)
+	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
+	slog.SetDefault(logger)
+
+	logger.Info("starting", "component", "webhook", "version", version)
 	metrics.MustRegister()
 
 	namespace := os.Getenv("POD_NAMESPACE")
@@ -45,39 +48,39 @@ func main() {
 
 	restCfg, err := rest.InClusterConfig()
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "in-cluster config: %v\n", err)
+		logger.Error("in-cluster config", "error", err)
 		os.Exit(1)
 	}
 
 	kube, err := kubernetes.NewForConfig(restCfg)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "kubernetes client: %v\n", err)
+		logger.Error("kubernetes client", "error", err)
 		os.Exit(1)
 	}
 
 	scheme := runtime.NewScheme()
 	if err := rules.AddToScheme(scheme); err != nil {
-		fmt.Fprintf(os.Stderr, "add scheme: %v\n", err)
+		logger.Error("add scheme", "error", err)
 		os.Exit(1)
 	}
 
 	ctrlClient, err := client.New(restCfg, client.Options{Scheme: scheme})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "controller-runtime client: %v\n", err)
+		logger.Error("controller-runtime client", "error", err)
 		os.Exit(1)
 	}
 
 	ctx, cancel := signal.NotifyContext(context.Background(), syscall.SIGTERM, syscall.SIGINT)
 	defer cancel()
 
-	tlsMgr, err := webhook.NewTLSManager(ctx, kube, namespace, serviceName)
+	tlsMgr, err := webhook.NewTLSManager(ctx, kube, namespace, serviceName, logger)
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "TLS setup: %v\n", err)
+		logger.Error("TLS setup", "error", err)
 		os.Exit(1)
 	}
 
 	if err := webhook.PatchWebhookCABundle(ctx, kube, webhookName, tlsMgr.CACert()); err != nil {
-		fmt.Fprintf(os.Stderr, "patch webhook caBundle: %v (continuing)\n", err)
+		logger.Warn("patch webhook caBundle", "error", err)
 	}
 
 	go tlsMgr.WatchAndRotate(ctx, webhookName)
@@ -103,9 +106,9 @@ func main() {
 	}
 
 	go func() {
-		fmt.Fprintf(os.Stderr, "logcloak-webhook listening on :8443\n")
+		logger.Info("listening", "addr", ":8443", "tls", true)
 		if err := srv.ListenAndServeTLS("", ""); err != nil && err != http.ErrServerClosed {
-			fmt.Fprintf(os.Stderr, "server error: %v\n", err)
+			logger.Error("server error", "error", err)
 			os.Exit(1)
 		}
 	}()
@@ -114,14 +117,14 @@ func main() {
 	metricsMux.Handle("/metrics", promhttp.Handler())
 	metricsMux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
 	go func() {
-		fmt.Fprintf(os.Stderr, "logcloak-webhook metrics on :9090\n")
+		logger.Info("metrics listening", "addr", ":9090")
 		if err := http.ListenAndServe(":9090", metricsMux); err != nil {
-			fmt.Fprintf(os.Stderr, "metrics server error: %v\n", err)
+			logger.Error("metrics server error", "error", err)
 		}
 	}()
 
 	<-ctx.Done()
-	fmt.Fprintf(os.Stderr, "shutting down\n")
+	logger.Info("shutting down")
 	shutCtx, shutCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer shutCancel()
 	_ = srv.Shutdown(shutCtx)

@@ -2,7 +2,7 @@ package main
 
 import (
 	"context"
-	"fmt"
+	"log/slog"
 	"os"
 
 	"k8s.io/apimachinery/pkg/runtime"
@@ -17,31 +17,34 @@ import (
 var version = "dev"
 
 func main() {
-	fmt.Fprintf(os.Stderr, "logcloak-controller %s starting\n", version)
+	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
+	slog.SetDefault(logger)
+
+	logger.Info("starting", "component", "controller", "version", version)
 
 	ctrl.SetLogger(zap.New())
 	scheme := runtime.NewScheme()
 	if err := rules.AddToScheme(scheme); err != nil {
-		fmt.Fprintf(os.Stderr, "add scheme: %v\n", err)
+		logger.Error("add scheme", "error", err)
 		os.Exit(1)
 	}
 
 	mgr, err := ctrl.NewManager(ctrl.GetConfigOrDie(), ctrl.Options{Scheme: scheme})
 	if err != nil {
-		fmt.Fprintf(os.Stderr, "new manager: %v\n", err)
+		logger.Error("new manager", "error", err)
 		os.Exit(1)
 	}
 
 	if err := ctrl.NewControllerManagedBy(mgr).
 		For(&rules.MaskingPolicy{}).
 		Complete(&maskingPolicyReconciler{Client: mgr.GetClient()}); err != nil {
-		fmt.Fprintf(os.Stderr, "setup controller: %v\n", err)
+		logger.Error("setup controller", "error", err)
 		os.Exit(1)
 	}
 
-	fmt.Fprintf(os.Stderr, "logcloak-controller running\n")
+	logger.Info("running")
 	if err := mgr.Start(ctrl.SetupSignalHandler()); err != nil {
-		fmt.Fprintf(os.Stderr, "manager error: %v\n", err)
+		logger.Error("manager error", "error", err)
 		os.Exit(1)
 	}
 }

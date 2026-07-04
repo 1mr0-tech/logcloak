@@ -46,3 +46,9 @@ namespaceSelector:
 podDisruptionBudget:
   enabled: true
   minAvailable: 1
+
+serviceMonitor:
+  enabled: false         # set true if prometheus-operator is installed
+  interval: 30s
+  namespace: ""          # defaults to release namespace
+  additionalLabels: {}   # add labels to match your Prometheus selector
