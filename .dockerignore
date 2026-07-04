@@ -1,0 +1,26 @@
+# Analysis and tooling output — not needed in the build context
+graphify-out/
+
+# Local build artifacts
+bin/
+dist/
+
+# Test fixtures (k8s YAML, not Go source)
+test/k8s/
+
+# Documentation and project files
+*.md
+docs/
+blog-draft.md
+
+# OS and editor
+.DS_Store
+*.swp
+*~
+
+# Git
+.git/
+
+# CI / IDE
+.github/
+.claude/
