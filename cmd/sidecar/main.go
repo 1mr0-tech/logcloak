@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"fmt"
+	"io"
 	"log/slog"
 	"net/http"
 	"os"
@@ -36,7 +37,13 @@ func main() {
 	compiled, err := rules.Deserialize(os.Getenv("LOGCLOAK_RULES"))
 	if err != nil {
 		logger.Error("failed to parse rules", "error", err)
-		runDropAll(logger, podName, podNS, "rules_parse_error")
+		fifo, ferr := os.Open(fifoPipe)
+		if ferr != nil {
+			logger.Error("cannot open FIFO in drop-all mode", "error", ferr)
+			os.Exit(1)
+		}
+		defer fifo.Close() //nolint:errcheck
+		dropPipe(fifo, os.Stdout, podName, podNS, "rules_parse_error")
 		return
 	}
 
@@ -51,40 +58,38 @@ func main() {
 	}
 	defer fifo.Close() //nolint:errcheck
 
-	scanner := bufio.NewScanner(fifo)
-	scanner.Buffer(make([]byte, maxLineBytes), maxLineBytes)
-
-	for scanner.Scan() {
-		line := scanner.Text()
-
-		start := time.Now()
-		masked, matched := m.MaskLine(line)
-		metrics.ProcessingDuration.WithLabelValues(podName, podNS).Observe(time.Since(start).Seconds())
-
-		fmt.Println(masked)
-		metrics.ProcessedLines.WithLabelValues(podName, podNS).Inc()
-		for _, name := range matched {
-			metrics.MaskedLines.WithLabelValues(podName, podNS, name).Inc()
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
+	if err := processPipe(fifo, os.Stdout, m, podName, podNS); err != nil {
 		logger.Error("scanner error", "error", err)
 		os.Exit(1)
 	}
 }
 
-func runDropAll(logger *slog.Logger, podName, podNS, reason string) {
-	fifo, err := os.Open(fifoPipe)
-	if err != nil {
-		logger.Error("cannot open FIFO in drop-all mode", "error", err)
-		os.Exit(1)
-	}
-	defer fifo.Close() //nolint:errcheck
-	scanner := bufio.NewScanner(fifo)
+// processPipe reads lines from r, applies masking, and writes results to w.
+// Used by main (with a real FIFO) and by tests (with in-memory readers/writers).
+func processPipe(r io.Reader, w io.Writer, m *masker.Masker, podName, podNS string) error {
+	scanner := bufio.NewScanner(r)
 	scanner.Buffer(make([]byte, maxLineBytes), maxLineBytes)
 	for scanner.Scan() {
-		fmt.Println(sentinel.Line(reason, podName))
+		line := scanner.Text()
+		start := time.Now()
+		masked, matched := m.MaskLine(line)
+		metrics.ProcessingDuration.WithLabelValues(podName, podNS).Observe(time.Since(start).Seconds())
+		fmt.Fprintln(w, masked)
+		metrics.ProcessedLines.WithLabelValues(podName, podNS).Inc()
+		for _, name := range matched {
+			metrics.MaskedLines.WithLabelValues(podName, podNS, name).Inc()
+		}
+	}
+	return scanner.Err()
+}
+
+// dropPipe reads every line from r and emits a drop sentinel to w.
+// Used when rules cannot be parsed so raw PII never reaches stdout.
+func dropPipe(r io.Reader, w io.Writer, podName, podNS, reason string) {
+	scanner := bufio.NewScanner(r)
+	scanner.Buffer(make([]byte, maxLineBytes), maxLineBytes)
+	for scanner.Scan() {
+		fmt.Fprintln(w, sentinel.Line(reason, podName))
 		metrics.DroppedLines.WithLabelValues(podName, podNS, reason).Inc()
 	}
 }

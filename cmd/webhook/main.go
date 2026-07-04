@@ -87,18 +87,9 @@ func main() {
 
 	h := &webhook.Handler{Client: ctrlClient, SidecarImage: sidecarImage}
 
-	mux := http.NewServeMux()
-	mux.Handle("/mutate", h)
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
-	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
-		w.WriteHeader(http.StatusOK)
-	})
-
 	srv := &http.Server{
 		Addr:              ":8443",
-		Handler:           mux,
+		Handler:           buildMux(h),
 		TLSConfig:         tlsMgr.Config(),
 		ReadHeaderTimeout: 10 * time.Second,
 		ReadTimeout:       30 * time.Second,
@@ -113,12 +104,9 @@ func main() {
 		}
 	}()
 
-	metricsMux := http.NewServeMux()
-	metricsMux.Handle("/metrics", promhttp.Handler())
-	metricsMux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) { w.WriteHeader(http.StatusOK) })
 	go func() {
 		logger.Info("metrics listening", "addr", ":9090")
-		if err := http.ListenAndServe(":9090", metricsMux); err != nil {
+		if err := http.ListenAndServe(":9090", buildMetricsMux()); err != nil {
 			logger.Error("metrics server error", "error", err)
 		}
 	}()
@@ -128,4 +116,25 @@ func main() {
 	shutCtx, shutCancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer shutCancel()
 	_ = srv.Shutdown(shutCtx)
+}
+
+func buildMux(h *webhook.Handler) http.Handler {
+	mux := http.NewServeMux()
+	mux.Handle("/mutate", h)
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	mux.HandleFunc("/readyz", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	return mux
+}
+
+func buildMetricsMux() http.Handler {
+	mux := http.NewServeMux()
+	mux.Handle("/metrics", promhttp.Handler())
+	mux.HandleFunc("/healthz", func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+	return mux
 }
