@@ -74,7 +74,9 @@ func processPipe(r io.Reader, w io.Writer, m *masker.Masker, podName, podNS stri
 		start := time.Now()
 		masked, matched := m.MaskLine(line)
 		metrics.ProcessingDuration.WithLabelValues(podName, podNS).Observe(time.Since(start).Seconds())
-		fmt.Fprintln(w, masked)
+		if _, err := fmt.Fprintln(w, masked); err != nil {
+			return err
+		}
 		metrics.ProcessedLines.WithLabelValues(podName, podNS).Inc()
 		for _, name := range matched {
 			metrics.MaskedLines.WithLabelValues(podName, podNS, name).Inc()
@@ -89,7 +91,7 @@ func dropPipe(r io.Reader, w io.Writer, podName, podNS, reason string) {
 	scanner := bufio.NewScanner(r)
 	scanner.Buffer(make([]byte, maxLineBytes), maxLineBytes)
 	for scanner.Scan() {
-		fmt.Fprintln(w, sentinel.Line(reason, podName))
+		_, _ = fmt.Fprintln(w, sentinel.Line(reason, podName))
 		metrics.DroppedLines.WithLabelValues(podName, podNS, reason).Inc()
 	}
 }
