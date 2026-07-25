@@ -33,6 +33,8 @@ spec:
                       type: string
                     regex:
                       type: string
+                    field:
+                      type: string
                   required: ["name"]
               redactWith:
                 type: string

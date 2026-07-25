@@ -7,6 +7,14 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.5.1] - 2026-07-25
+
+### Fixed
+
+- **`MaskingPolicy` CRD rejected the documented `field:` pattern type.** The README's own JSON field masking example (`patterns[].field: password`) failed with `strict decoding error: unknown field "spec.patterns[0].field"` because `charts/logcloak/crds/maskingpolicies.logcloak.io.yaml` never declared `field` in its OpenAPI schema, even though the Go-side `PatternSpec.Field` and masking logic have supported it since JSON field masking shipped in 0.4.0. The pod-annotation path (`logcloak.io/fields`) was unaffected. CRD-based cluster-wide JSON field masking now works as documented.
+
+---
+
 ## [0.5.0] - 2026-07-25
 
 ### Added
