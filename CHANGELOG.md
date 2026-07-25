@@ -7,6 +7,24 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.5.0] - 2026-07-25
+
+### Added
+
+- **PodDisruptionBudget.** The webhook deployment now ships with a `PodDisruptionBudget` (`minAvailable: 1` by default, configurable via `podDisruptionBudget.*` Helm values) so voluntary node drains can't take down all webhook replicas at once.
+- **`seccompProfile: RuntimeDefault`** applied to webhook, controller, and sidecar containers as part of Pod Security Standards hardening.
+- **TLS certificate rotation.** The webhook now rotates its self-signed cert automatically before expiry and exposes `logcloak_tls_cert_expiry_seconds` as a Prometheus gauge. Fixes the prior race where multiple replicas could generate conflicting certs on first boot (see 0.4.1 fix, now hardened further).
+- **Structured JSON logging (`slog`)** across webhook and controller, replacing ad hoc `fmt`/`log` output.
+- **`ServiceMonitor` template**, disabled by default (`serviceMonitor.enabled: false`), for clusters running the Prometheus Operator.
+- **Integration test coverage** for `cmd/sidecar` and `cmd/webhook` binaries.
+
+### Changed
+
+- CI lint pipeline migrated to `golangci-lint-action@v7` for Node 24 runner compatibility; fixed resulting `errcheck` violations in sidecar and webhook test code.
+- Added `.dockerignore` to fix Docker build context transfer failures caused by extended attributes on macOS.
+
+---
+
 ## [0.4.1] - 2026-06-14
 
 ### Fixed
