@@ -1,0 +1,271 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import Terminal from '@/components/site/Terminal.astro';
+import { href, GITHUB_URL } from '@/lib/site';
+import { CardSpotlight } from '@/components/inspira-ui/card-spotlight';
+
+const leaks = [
+  { src: 'kubectl logs in a developer’s terminal', stopped: true },
+  { src: '/var/log/containers/ on the node', stopped: true },
+  { src: 'Log shippers (Fluent Bit, Fluentd, Promtail)', stopped: true },
+  { src: 'Third-party platforms (Datadog, Splunk, Elastic)', stopped: true },
+  { src: 'S3 / GCS log archives', stopped: true },
+  { src: 'CI/CD pipelines that capture stdout', stopped: true },
+  { src: 'kubectl exec into a running container', stopped: false, note: 'out of scope — use RBAC' },
+  { src: 'Application memory / heap dumps', stopped: false, note: 'out of scope' },
+];
+
+const rules = [
+  {
+    who: 'MaskingPolicy CRD',
+    owner: 'Platform / security team',
+    what: 'Applies to all matching pods in a namespace. Source of truth for company-wide PII rules. Developers cannot remove these.',
+  },
+  {
+    who: 'logcloak.io/patterns',
+    owner: 'Developer',
+    what: 'Enable built-in patterns per pod, e.g. logcloak.io/patterns: "uuid,iban"',
+  },
+  {
+    who: 'logcloak.io/regex-<name>',
+    owner: 'Developer',
+    what: 'Add a custom RE2 regex per pod, e.g. logcloak.io/regex-order-id: "ORD-[0-9]{8}"',
+  },
+  {
+    who: 'logcloak.io/fields',
+    owner: 'Developer',
+    what: 'Mask JSON field names regardless of value format, e.g. logcloak.io/fields: "password,api_token"',
+  },
+];
+
+const patterns: [string, string, string][] = [
+  ['email', 'Email addresses', 'user@example.com'],
+  ['phone-e164', 'E.164 international phone numbers', '+12025550104'],
+  ['phone-us', 'US phone formats', '(202) 555-0104'],
+  ['otp-6digit', 'Standalone 6-digit OTP codes', '847291'],
+  ['credit-card', '13–19 digit card numbers', '4111 1111 1111 1111'],
+  ['jwt', 'JWT tokens', 'eyJhbGci…'],
+  ['ipv4-private', 'RFC 1918 private IP addresses', '192.168.1.100'],
+  ['uuid', 'UUID v4', '550e8400-e29b-41d4-…'],
+  ['iban', 'International Bank Account Numbers', 'GB29NWBK60161331926819'],
+  ['ssn', 'US Social Security Numbers', '123-45-6789'],
+];
+---
+<Layout
+  title="logcloak — your logs have been talking behind your back"
+  description="Real-time Kubernetes pod log masker. Redacts PII, OTPs, and tokens before logs reach kubectl logs or disk."
+  current="/"
+>
+  <section class="relative overflow-hidden px-6 pb-20 pt-24 text-center">
+    <div class="relative mx-auto max-w-3xl">
+      <h1 class="text-4xl font-extrabold tracking-tight text-balance sm:text-5xl md:text-6xl">
+        <span class="text-muted-foreground/40 line-through">kubectl logs</span><br />
+        <span class="text-brand-good">kubectl logs</span> without the panic
+      </h1>
+      <p class="mx-auto mt-6 max-w-lg text-balance text-muted-foreground">
+        Your app is logging emails, OTPs, and credit cards. logcloak intercepts them
+        before they hit <code class="rounded border border-border bg-white/5 px-1.5 py-0.5 font-mono text-sm">kubectl logs</code>,
+        <code class="rounded border border-border bg-white/5 px-1.5 py-0.5 font-mono text-sm">/var/log/containers/</code>,
+        or anywhere else. No code changes. Just install and forget.
+      </p>
+      <div class="mt-9 flex flex-wrap items-center justify-center gap-3">
+        <a href={href('/guide')} class="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5 hover:bg-primary/90">
+          Get started →
+        </a>
+        <a href={href('/tool')} class="rounded-lg border border-border px-5 py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-primary/50 hover:text-primary">
+          Build a pattern
+        </a>
+        <a href={GITHUB_URL} class="rounded-lg border border-border px-5 py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-primary/50">
+          GitHub
+        </a>
+      </div>
+    </div>
+
+    <div class="relative mx-auto mt-14 grid max-w-3xl gap-4 text-left sm:grid-cols-2">
+      <Terminal label="without logcloak" tone="bad">
+        <p class="text-muted-foreground">$ kubectl logs payment-pod</p>
+        <p class="text-brand-bad">Processing payment for</p>
+        <p class="text-brand-bad">&nbsp;&nbsp;user@example.com</p>
+        <p class="text-brand-bad">&nbsp;&nbsp;card=4111111111111111</p>
+        <p class="text-brand-bad">&nbsp;&nbsp;otp=847291</p>
+      </Terminal>
+      <div class="rounded-xl ring-1 ring-brand-good/30">
+        <Terminal label="with logcloak" tone="good">
+          <p class="text-muted-foreground">$ kubectl logs payment-pod</p>
+          <p class="text-brand-good">Processing payment for</p>
+          <p class="text-brand-good">&nbsp;&nbsp;[REDACTED]</p>
+          <p class="text-brand-good">&nbsp;&nbsp;card=[REDACTED]</p>
+          <p class="text-brand-good">&nbsp;&nbsp;otp=[REDACTED]</p>
+          <p class="text-muted-foreground">&nbsp;&nbsp;(same pod · zero changes)</p>
+        </Terminal>
+      </div>
+    </div>
+  </section>
+
+  <hr class="border-border" />
+
+  <section class="mx-auto max-w-3xl px-6 py-16">
+    <p class="mb-2 font-mono text-xs font-bold uppercase tracking-widest text-primary">The problem</p>
+    <h2 class="mb-4 text-2xl font-bold tracking-tight sm:text-3xl">Your logs are the gap in your security model</h2>
+    <p class="mb-6 text-muted-foreground">
+      Most teams lock down their database with encrypted connections, strict RBAC, and audit logging —
+      then ship the same plaintext data out through every log pipeline they operate. A developer adds
+      one debug line: <code class="rounded border border-border bg-white/5 px-1.5 py-0.5 font-mono text-sm">log.info("order for {}", user.email)</code>.
+      That line ends up in Datadog, Elasticsearch, an S3 bucket, your SIEM, and six terminals belonging
+      to people who were only supposed to see latency metrics. Nobody notices. This is the default state
+      of most Kubernetes deployments.
+    </p>
+
+    <blockquote class="mb-8 rounded-lg border border-border bg-card p-5">
+      <p class="mb-2 font-semibold text-foreground">&ldquo;But anyone with kubectl exec can see everything anyway&rdquo;</p>
+      <p class="text-sm text-muted-foreground">
+        True — and that is a separate control. <code class="rounded border border-border bg-white/5 px-1 py-0.5 font-mono text-xs">kubectl exec</code>
+        requires explicit RBAC that is typically restricted, audited, and often disabled in production.
+        <code class="rounded border border-border bg-white/5 px-1 py-0.5 font-mono text-xs">kubectl logs</code> is handed out far more
+        broadly — to developers, support teams, CI pipelines, and log agents. logcloak defends the log
+        surface. RBAC defends exec. Use both.
+      </p>
+    </blockquote>
+
+    <div class="overflow-hidden rounded-lg border border-border">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border bg-card">
+            <th class="px-4 py-2.5 text-left font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">Where PII leaks</th>
+            <th class="px-4 py-2.5 text-left font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">logcloak stops it</th>
+          </tr>
+        </thead>
+        <tbody>
+          {leaks.map((l) => (
+            <tr class="border-b border-border/60 last:border-0">
+              <td class="px-4 py-3 text-muted-foreground">{l.src}</td>
+              <td class:list={['px-4 py-3 font-medium', l.stopped ? 'text-brand-good' : 'text-muted-foreground/70']}>
+                {l.stopped ? '✓ stopped' : (l.note ?? '—')}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="border-border" />
+
+  <section class="mx-auto max-w-3xl px-6 py-16">
+    <p class="mb-2 font-mono text-xs font-bold uppercase tracking-widest text-primary">How it works</p>
+    <h2 class="mb-3 text-2xl font-bold tracking-tight sm:text-3xl">One FIFO to rule them all</h2>
+    <p class="mb-8 max-w-lg text-muted-foreground">
+      The webhook injects a sidecar that reads from an in-memory pipe. Your app writes normally.
+      <em class="text-foreground not-italic font-medium">Masking happens before containerd sees a single byte.</em>
+    </p>
+
+    <div class="mb-8 overflow-x-auto rounded-xl border border-border bg-card p-6">
+      <div class="flex min-w-[560px] items-stretch justify-between gap-2 font-mono text-xs">
+        <div class="flex flex-1 flex-col items-center gap-2 rounded-lg border border-border bg-background p-4 text-center">
+          <span class="font-semibold text-foreground">app container</span>
+          <span class="text-muted-foreground">writes to stdout</span>
+        </div>
+        <div class="flex items-center text-primary">→</div>
+        <div class="flex flex-1 flex-col items-center gap-2 rounded-lg border border-dashed border-primary/50 bg-primary/5 p-4 text-center">
+          <span class="font-semibold text-primary">in-memory FIFO</span>
+          <span class="text-muted-foreground">never touches disk</span>
+        </div>
+        <div class="flex items-center text-primary">→</div>
+        <div class="flex flex-1 flex-col items-center gap-2 rounded-lg border border-border bg-background p-4 text-center">
+          <span class="font-semibold text-foreground">logcloak sidecar</span>
+          <span class="text-muted-foreground">applies rules, masks</span>
+        </div>
+        <div class="flex items-center text-brand-good">→</div>
+        <div class="flex flex-1 flex-col items-center gap-2 rounded-lg border border-brand-good/40 bg-brand-good/5 p-4 text-center">
+          <span class="font-semibold text-brand-good">containerd</span>
+          <span class="text-muted-foreground">captures masked output only</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid gap-4 sm:grid-cols-2">
+      <CardSpotlight client:visible class="rounded-xl border border-border p-6">
+        <h3 class="mb-1.5 font-semibold text-foreground">Fail-closed — always</h3>
+        <p class="text-sm text-muted-foreground">
+          If masking fails for any reason (timeout, panic, pattern error), logcloak drops the line and
+          writes a <code class="rounded border border-border bg-white/5 px-1 py-0.5 font-mono text-xs">[LOGCLOAK-DROP]</code> sentinel instead.
+          The raw line never passes through. Alert on the sentinel in your log aggregator.
+        </p>
+      </CardSpotlight>
+      <CardSpotlight client:visible class="rounded-xl border border-border p-6">
+        <h3 class="mb-1.5 font-semibold text-foreground">No latency your app can feel</h3>
+        <p class="text-sm text-muted-foreground">
+          Writing to a FIFO is identical to writing to any file descriptor. Your app doesn't wait for
+          masking — it doesn't even know logcloak exists.
+        </p>
+      </CardSpotlight>
+    </div>
+  </section>
+
+  <hr class="border-border" />
+
+  <section class="mx-auto max-w-3xl px-6 py-16">
+    <p class="mb-2 font-mono text-xs font-bold uppercase tracking-widest text-primary">Rules system</p>
+    <h2 class="mb-3 text-2xl font-bold tracking-tight sm:text-3xl">Two ways to mask, one stack</h2>
+    <p class="mb-8 max-w-lg text-muted-foreground">
+      Platform team sets the baseline. Developers extend per service.
+      <em class="text-foreground not-italic font-medium">Annotations can add rules — they can never remove them.</em>
+    </p>
+    <div class="overflow-x-auto rounded-lg border border-border">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-border bg-card">
+            <th class="px-4 py-2.5 text-left font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">Annotation / resource</th>
+            <th class="px-4 py-2.5 text-left font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">Who uses it</th>
+            <th class="px-4 py-2.5 text-left font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">What it does</th>
+          </tr>
+        </thead>
+        <tbody>
+          {rules.map((r) => (
+            <tr class="border-b border-border/60 last:border-0 align-top">
+              <td class="whitespace-nowrap px-4 py-3 font-mono text-xs font-semibold text-primary">{r.who}</td>
+              <td class="px-4 py-3 text-muted-foreground">{r.owner}</td>
+              <td class="px-4 py-3 text-muted-foreground">{r.what}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="border-border" />
+
+  <section class="mx-auto max-w-3xl px-6 py-16">
+    <p class="mb-2 font-mono text-xs font-bold uppercase tracking-widest text-primary">Built-in patterns</p>
+    <h2 class="mb-3 text-2xl font-bold tracking-tight sm:text-3xl">10 patterns, zero regex writing</h2>
+    <p class="mb-8 max-w-lg text-muted-foreground">
+      Enable by name. Use the <a href={href('/tool')} class="text-primary underline underline-offset-4 decoration-primary/30 hover:decoration-primary">pattern tool</a> to preview against your actual log lines before deploying.
+    </p>
+    <div class="grid gap-2.5 sm:grid-cols-2">
+      {patterns.map(([name, desc, example]) => (
+        <div class="flex items-start gap-3 rounded-lg border border-border bg-card p-3.5">
+          <div>
+            <div class="font-mono text-sm font-bold text-primary">{name}</div>
+            <div class="mt-0.5 text-sm text-muted-foreground">{desc}</div>
+            <div class="mt-1 font-mono text-xs text-muted-foreground/40">{example}</div>
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+
+  <hr class="border-border" />
+
+  <section class="px-6 py-20 text-center">
+    <h2 class="mb-3 text-2xl font-bold tracking-tight sm:text-3xl">Your logs. Your secrets. Keep it that way.</h2>
+    <p class="mb-8 text-muted-foreground">One helm install. Pick your patterns. Done.</p>
+    <div class="flex flex-wrap items-center justify-center gap-3">
+      <a href={href('/guide')} class="rounded-lg bg-primary px-5 py-2.5 text-sm font-semibold text-primary-foreground transition-transform hover:-translate-y-0.5 hover:bg-primary/90">
+        Read the guide
+      </a>
+      <a href={href('/tool')} class="rounded-lg border border-border px-5 py-2.5 text-sm font-semibold text-foreground transition-colors hover:border-primary/50 hover:text-primary">
+        Try the pattern tool
+      </a>
+    </div>
+  </section>
+</Layout>

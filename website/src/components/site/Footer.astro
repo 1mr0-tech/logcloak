@@ -1,0 +1,17 @@
+---
+import { href, GITHUB_URL } from '@/lib/site';
+---
+<footer class="border-t border-border px-6 py-10 text-center font-mono text-xs text-muted-foreground">
+  <div class="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+    <a href={href('/')} class="hover:text-foreground">home</a>
+    <span class="opacity-30">·</span>
+    <a href={href('/guide')} class="hover:text-foreground">guide</a>
+    <span class="opacity-30">·</span>
+    <a href={href('/docs')} class="hover:text-foreground">docs</a>
+    <span class="opacity-30">·</span>
+    <a href={href('/tool')} class="hover:text-foreground">pattern tool</a>
+    <span class="opacity-30">·</span>
+    <a href={GITHUB_URL} class="hover:text-foreground">github</a>
+  </div>
+  <p class="mt-4 opacity-40">open source · MIT license · no telemetry</p>
+</footer>

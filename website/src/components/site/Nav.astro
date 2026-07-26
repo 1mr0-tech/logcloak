@@ -1,0 +1,43 @@
+---
+import { NAV_LINKS, GITHUB_URL, href } from '@/lib/site';
+
+const { current } = Astro.props as { current?: string };
+---
+<nav class="sticky top-0 z-50 border-b border-border bg-background/85 backdrop-blur-xl">
+  <div class="mx-auto flex h-13 max-w-5xl items-center gap-2 px-6">
+    <a href={href('/')} class="flex items-center gap-2 font-mono text-sm font-bold text-foreground">
+      <img src={href('/logo-icon.png')} alt="" width="22" height="22" class="rounded-sm" />
+      logcloak
+    </a>
+    <div class="ml-auto flex items-center gap-1">
+      {NAV_LINKS.map((l) => (
+        <a
+          href={href(l.path)}
+          class:list={[
+            'rounded-md px-2.5 py-1.5 text-sm transition-colors',
+            current === l.path
+              ? 'font-semibold text-primary'
+              : 'text-muted-foreground hover:bg-white/5 hover:text-foreground',
+          ]}
+        >
+          {l.label}
+        </a>
+      ))}
+      <a
+        href={href('/tool')}
+        class:list={[
+          'rounded-md px-2.5 py-1.5 text-sm font-semibold transition-colors',
+          current === '/tool' ? 'text-primary' : 'text-primary/80 hover:text-primary',
+        ]}
+      >
+        Pattern Tool ↗
+      </a>
+      <a
+        href={GITHUB_URL}
+        class="ml-1.5 rounded-md border border-border bg-card px-2.5 py-1.5 text-sm text-foreground transition-colors hover:border-primary/50"
+      >
+        GitHub
+      </a>
+    </div>
+  </div>
+</nav>

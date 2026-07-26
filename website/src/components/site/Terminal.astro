@@ -1,0 +1,25 @@
+---
+interface Props {
+  label: string;
+  tone?: 'bad' | 'good';
+}
+const { label, tone = 'good' } = Astro.props;
+---
+<div class="overflow-hidden rounded-xl border border-border bg-[#0d0d0f] shadow-2xl shadow-black/40">
+  <div class="flex items-center gap-1.5 border-b border-border bg-card px-3.5 py-2.5">
+    <span class="size-2.5 rounded-full bg-[#ff5f57]"></span>
+    <span class="size-2.5 rounded-full bg-[#febc2e]"></span>
+    <span class="size-2.5 rounded-full bg-[#28c840]"></span>
+    <span
+      class:list={[
+        'ml-auto font-mono text-[0.7rem]',
+        tone === 'bad' ? 'text-brand-bad' : 'text-brand-good',
+      ]}
+    >
+      {label}
+    </span>
+  </div>
+  <div class="space-y-1 p-5 font-mono text-[0.8rem] leading-relaxed">
+    <slot />
+  </div>
+</div>

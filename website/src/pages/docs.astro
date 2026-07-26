@@ -1,0 +1,203 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import Code from '@/components/site/Code.astro';
+import { href } from '@/lib/site';
+
+const toc = [
+  ['patterns', 'Built-in patterns'],
+  ['custom-regex', 'Custom regex rules'],
+  ['json-fields', 'JSON field masking'],
+  ['mesh', 'Service mesh compatibility'],
+  ['sentinel', 'Drop sentinel'],
+  ['observability', 'Observability'],
+  ['config', 'Configuration reference'],
+  ['clusters', 'Supported clusters'],
+];
+
+const patterns = [
+  ['email', 'RFC 5321 email addresses'],
+  ['phone-e164', 'E.164 international phone numbers (+12025550104)'],
+  ['phone-us', 'US phone number formats'],
+  ['otp-6digit', 'Standalone 6-digit numeric OTP codes'],
+  ['credit-card', '13–19 digit card numbers'],
+  ['jwt', 'JWT tokens (eyJ...)'],
+  ['ipv4-private', 'RFC 1918 private IP addresses'],
+  ['uuid', 'UUID v4'],
+  ['iban', 'International Bank Account Numbers (all countries)'],
+  ['ssn', 'US Social Security Numbers (XXX-XX-XXXX)'],
+];
+
+const metrics = [
+  ['logcloak_lines_processed_total', 'Total log lines processed'],
+  ['logcloak_lines_masked_total', 'Lines where at least one pattern matched'],
+  ['logcloak_dropped_lines_total', 'Lines dropped (by reason)'],
+  ['logcloak_processing_duration_seconds', 'Per-line processing latency histogram'],
+  ['logcloak_webhook_admissions_total', 'Webhook admission outcomes'],
+  ['logcloak_webhook_errors_total', 'Webhook failures'],
+  ['logcloak_rule_cache_size', 'Pod rule sets currently cached by the controller'],
+  ['logcloak_tls_cert_expiry_seconds', "Seconds until the webhook's TLS certificate expires"],
+];
+
+const config = [
+  ['tls.certManager', 'false', 'Use cert-manager for TLS (recommended for managed clusters)'],
+  ['tls.mode', 'self-signed', 'TLS mode: self-signed, certManager, bring-your-own'],
+  ['webhook.failurePolicy', 'Ignore', 'Ignore: pods start uninjected if webhook is down. Fail: blocks pod creation'],
+  ['webhook.timeoutSeconds', '5', 'Webhook response timeout'],
+  ['sidecar.maxLineSizeBytes', '1048576', 'Lines larger than this are dropped with reason=line_too_long'],
+  ['sidecar.resources.requests.cpu', '5m', 'CPU request per injected pod'],
+  ['sidecar.resources.requests.memory', '20Mi', 'Memory request per injected pod'],
+  ['controller.ruleCacheTTL', '30s', 'How often the controller re-syncs rules'],
+  ['metrics.enabled', 'true', 'Enable Prometheus metrics endpoint'],
+  ['metrics.port', '9090', 'Metrics port'],
+  ['podDisruptionBudget.enabled', 'true', 'Create a PodDisruptionBudget for the webhook deployment'],
+  ['podDisruptionBudget.minAvailable', '1', 'Minimum available webhook replicas during a voluntary disruption'],
+  ['serviceMonitor.enabled', 'false', 'Create a Prometheus Operator ServiceMonitor (requires the CRD installed)'],
+  ['serviceMonitor.interval', '30s', 'Scrape interval'],
+];
+
+const clusters = [
+  ['k3s', 'tls.mode=self-signed', 'Works with default containerd logging'],
+  ['GKE', 'tls.certManager=true', 'cert-manager available via GKE add-on'],
+  ['EKS', 'tls.certManager=true', 'Install cert-manager before logcloak'],
+  ['AKS', 'tls.certManager=true', 'cert-manager available via AKS add-on'],
+];
+---
+<Layout title="Docs — logcloak" description="Reference documentation: patterns, configuration values, metrics, and cluster compatibility." current="/docs">
+  <div class="mx-auto grid max-w-5xl grid-cols-1 gap-10 px-6 py-14 lg:grid-cols-[1fr_200px]">
+    <article class="prose-doc min-w-0">
+      <p class="mb-1 font-mono text-xs font-bold uppercase tracking-widest text-primary">Reference</p>
+      <h1 class="mb-4 text-3xl font-bold tracking-tight text-foreground">Documentation</h1>
+      <p class="text-muted-foreground">
+        logcloak injects a masker sidecar into opted-in pods via a Mutating Admission Webhook. The app
+        container's stdout/stderr is redirected through an in-memory named pipe to the sidecar, which
+        applies masking rules and outputs clean logs to its own stdout — the container runtime only ever
+        captures the sidecar's masked output.
+      </p>
+
+      <h2 id="patterns">Built-in patterns</h2>
+      <p>Enable these by name in <code>MaskingPolicy.spec.patterns[].builtin</code> or the <code>logcloak.io/patterns</code> annotation.</p>
+      <div class="not-prose overflow-x-auto rounded-lg border border-border">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-border bg-card">
+              <th class="px-4 py-2.5 text-left font-mono text-xs uppercase tracking-wider text-muted-foreground">Name</th>
+              <th class="px-4 py-2.5 text-left font-mono text-xs uppercase tracking-wider text-muted-foreground">What it matches</th>
+            </tr>
+          </thead>
+          <tbody>
+            {patterns.map(([name, desc]) => (
+              <tr class="border-b border-border/60 last:border-0">
+                <td class="whitespace-nowrap px-4 py-2.5 font-mono text-xs font-semibold text-primary">{name}</td>
+                <td class="px-4 py-2.5 text-muted-foreground">{desc}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="custom-regex">Custom regex rules</h2>
+      <p>Custom patterns must be valid RE2 expressions. Lookaheads, lookbehinds, and backreferences are rejected at pod admission time to prevent ReDoS attacks.</p>
+      <Code code={`# In MaskingPolicy\npatterns:\n  - name: internal-token\n    regex: "tok_[a-zA-Z0-9]{40}"\n\n# In pod annotation\nlogcloak.io/regex-internal-token: "tok_[a-zA-Z0-9]{40}"`} />
+      <p>Invalid regex is rejected with a clear error at admission:</p>
+      <Code code={`Error from server: admission webhook denied the request:\nlogcloak: invalid regex "tok_(?=abc)" in annotation logcloak.io/regex-foo:\nunsafe regex construct "(?=" detected — only RE2-compatible patterns allowed`} />
+
+      <h2 id="json-fields">JSON field masking</h2>
+      <p>Mask specific field names in structured JSON logs — regardless of value format — without affecting other fields. Applies to lines that begin with <code>{'{'}</code> and recurses into nested objects and arrays. Runs before regex rules, so both can be active at once.</p>
+      <Code code={`# Via MaskingPolicy CRD\nspec:\n  patterns:\n    - name: password-field\n      field: password\n    - name: token-field\n      field: api_token\n\n# Via pod annotation\nmetadata:\n  annotations:\n    logcloak.io/fields: "password,token,api_key,card_number"`} />
+
+      <h2 id="mesh">Service mesh compatibility</h2>
+      <p>logcloak is safe alongside Istio, Linkerd, Consul Connect, AWS App Mesh, and Kuma — meshes intercept traffic at the socket/iptables layer, entirely separate from stdout. These containers are always skipped:</p>
+      <div class="not-prose overflow-x-auto rounded-lg border border-border">
+        <table class="w-full text-sm">
+          <tbody>
+            <tr class="border-b border-border/60"><td class="whitespace-nowrap px-4 py-2 font-mono text-xs text-primary">istio-proxy</td><td class="px-4 py-2 text-muted-foreground">Istio</td></tr>
+            <tr class="border-b border-border/60"><td class="whitespace-nowrap px-4 py-2 font-mono text-xs text-primary">linkerd-proxy</td><td class="px-4 py-2 text-muted-foreground">Linkerd</td></tr>
+            <tr class="border-b border-border/60"><td class="whitespace-nowrap px-4 py-2 font-mono text-xs text-primary">envoy / envoy-sidecar</td><td class="px-4 py-2 text-muted-foreground">AWS App Mesh, standalone Envoy, Consul Connect</td></tr>
+            <tr class="border-b border-border/60"><td class="whitespace-nowrap px-4 py-2 font-mono text-xs text-primary">kuma-sidecar / consul-sidecar</td><td class="px-4 py-2 text-muted-foreground">Kuma, Consul</td></tr>
+            <tr><td class="whitespace-nowrap px-4 py-2 font-mono text-xs text-primary">vault-agent / config-reloader</td><td class="px-4 py-2 text-muted-foreground">Vault Agent Injector, common infra sidecars</td></tr>
+          </tbody>
+        </table>
+      </div>
+      <p>For anything else — a postgres container, a monitoring agent — exclude it explicitly:</p>
+      <Code code={`metadata:\n  annotations:\n    logcloak.io/exclude-containers: "postgres,redis,datadog-agent"`} />
+
+      <h2 id="sentinel">Drop sentinel</h2>
+      <p>When a log line cannot be processed (regex timeout, sidecar error), logcloak never passes the raw line through. It writes a sentinel instead, visible in <code>kubectl logs</code>:</p>
+      <Code code={`[LOGCLOAK-DROP] 2026-04-22T10:15:30Z | reason=regex_timeout | pod=my-app-7d9f | line suppressed`} />
+      <p>Alert on <code>LOGCLOAK-DROP</code> in your log aggregation system to detect processing failures.</p>
+
+      <h2 id="observability">Observability</h2>
+      <p>Structured JSON logs (<code>slog</code>) from webhook and controller. Prometheus metrics on port <code>9090</code>:</p>
+      <div class="not-prose overflow-x-auto rounded-lg border border-border">
+        <table class="w-full text-sm">
+          <tbody>
+            {metrics.map(([name, desc]) => (
+              <tr class="border-b border-border/60 last:border-0">
+                <td class="whitespace-nowrap px-4 py-2 font-mono text-xs text-primary">{name}</td>
+                <td class="px-4 py-2 text-muted-foreground">{desc}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+      <p>A <code>PodDisruptionBudget</code> (<code>minAvailable: 1</code> by default) ships with the chart, so voluntary node drains can't take down every webhook replica at once.</p>
+
+      <h2 id="config">Configuration reference</h2>
+      <div class="not-prose overflow-x-auto rounded-lg border border-border">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-border bg-card">
+              <th class="px-4 py-2.5 text-left font-mono text-xs uppercase tracking-wider text-muted-foreground">Value</th>
+              <th class="px-4 py-2.5 text-left font-mono text-xs uppercase tracking-wider text-muted-foreground">Default</th>
+              <th class="px-4 py-2.5 text-left font-mono text-xs uppercase tracking-wider text-muted-foreground">Description</th>
+            </tr>
+          </thead>
+          <tbody>
+            {config.map(([name, def, desc]) => (
+              <tr class="border-b border-border/60 last:border-0">
+                <td class="whitespace-nowrap px-4 py-2 font-mono text-xs text-primary">{name}</td>
+                <td class="whitespace-nowrap px-4 py-2 font-mono text-xs text-muted-foreground">{def}</td>
+                <td class="px-4 py-2 text-muted-foreground">{desc}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <h2 id="clusters">Supported clusters</h2>
+      <div class="not-prose overflow-x-auto rounded-lg border border-border">
+        <table class="w-full text-sm">
+          <thead>
+            <tr class="border-b border-border bg-card">
+              <th class="px-4 py-2.5 text-left font-mono text-xs uppercase tracking-wider text-muted-foreground">Cluster</th>
+              <th class="px-4 py-2.5 text-left font-mono text-xs uppercase tracking-wider text-muted-foreground">TLS recommendation</th>
+              <th class="px-4 py-2.5 text-left font-mono text-xs uppercase tracking-wider text-muted-foreground">Notes</th>
+            </tr>
+          </thead>
+          <tbody>
+            {clusters.map(([name, tls, notes]) => (
+              <tr class="border-b border-border/60 last:border-0">
+                <td class="whitespace-nowrap px-4 py-2 font-medium text-foreground">{name}</td>
+                <td class="whitespace-nowrap px-4 py-2 font-mono text-xs text-primary">{tls}</td>
+                <td class="px-4 py-2 text-muted-foreground">{notes}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <p class="mt-8">
+        Looking for a step-by-step walkthrough instead of a reference? See the <a href={href('/guide')}>guide</a>.
+      </p>
+    </article>
+
+    <aside class="hidden lg:block">
+      <div class="sticky top-20 space-y-1 border-l border-border pl-4 text-sm">
+        <p class="mb-2 font-mono text-xs font-semibold uppercase tracking-wider text-muted-foreground">On this page</p>
+        {toc.map(([id, label]) => (
+          <a href={`#${id}`} class="block py-1 text-muted-foreground hover:text-primary">{label}</a>
+        ))}
+      </div>
+    </aside>
+  </div>
+</Layout>

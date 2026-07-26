@@ -1,0 +1,30 @@
+---
+interface Props {
+  code: string;
+  lang?: string;
+}
+const { code } = Astro.props;
+---
+<div class="group relative my-4 overflow-hidden rounded-lg border border-border bg-[#0d0d0f]">
+  <button
+    type="button"
+    class="copy-btn absolute right-2.5 top-2.5 rounded-md border border-border bg-card px-2 py-1 font-mono text-[0.68rem] text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100"
+    data-code={code}
+  >
+    copy
+  </button>
+  <pre class="overflow-x-auto p-4 font-mono text-[0.8rem] leading-relaxed text-foreground/90"><code set:text={code} /></pre>
+</div>
+
+<script>
+  document.addEventListener('click', (e) => {
+    const btn = (e.target as HTMLElement)?.closest<HTMLButtonElement>('.copy-btn');
+    if (!btn) return;
+    const text = btn.dataset.code ?? '';
+    navigator.clipboard.writeText(text).then(() => {
+      const original = btn.textContent;
+      btn.textContent = 'copied!';
+      setTimeout(() => (btn.textContent = original), 1200);
+    });
+  });
+</script>

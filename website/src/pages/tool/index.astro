@@ -1,0 +1,19 @@
+---
+import Layout from '@/layouts/Layout.astro';
+import PatternTool from '@/components/site/PatternTool';
+---
+<Layout
+  title="Pattern tool — logcloak"
+  description="Build and preview logcloak masking rules against a real log line, then copy ready-to-use MaskingPolicy YAML or pod annotations."
+  current="/tool"
+>
+  <div class="mx-auto max-w-5xl px-6 py-14">
+    <p class="mb-1 font-mono text-xs font-bold uppercase tracking-widest text-primary">Pattern tool</p>
+    <h1 class="mb-3 text-3xl font-bold tracking-tight text-foreground">Build a masking rule</h1>
+    <p class="mb-10 max-w-lg text-muted-foreground">
+      Select built-in patterns or write a custom regex, preview the result against a real log line, and
+      copy ready-to-use YAML — no cluster required.
+    </p>
+    <PatternTool client:load />
+  </div>
+</Layout>

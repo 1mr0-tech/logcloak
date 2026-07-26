@@ -1,0 +1,67 @@
+name: Deploy website
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'website/**'
+      - '.github/workflows/deploy-website.yaml'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: gh-pages-deploy
+  cancel-in-progress: false
+
+jobs:
+  build-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+
+      - name: Install dependencies
+        working-directory: website
+        run: npm ci
+
+      - name: Build site
+        working-directory: website
+        run: npm run build
+
+      - name: Publish to gh-pages
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+          git fetch origin gh-pages
+          git worktree add /tmp/gh-pages origin/gh-pages
+
+          # Remove only the paths this workflow owns (the built site).
+          # Helm chart artifacts (index.yaml, logcloak-*.tgz) are never touched.
+          rm -rf /tmp/gh-pages/_astro /tmp/gh-pages/guide /tmp/gh-pages/docs /tmp/gh-pages/tool
+          find /tmp/gh-pages -maxdepth 1 -type f \( -name '*.html' -o -name '*.ico' -o -name '*.svg' \) -delete
+
+          cp -r website/dist/. /tmp/gh-pages/
+
+          cd /tmp/gh-pages
+          git add -A
+          if git diff --cached --quiet; then
+            echo "nothing to commit"
+          else
+            git commit -m "site: deploy website from ${{ github.sha }}"
+            for attempt in 1 2 3; do
+              if git push origin HEAD:gh-pages; then
+                break
+              fi
+              echo "push rejected, rebasing (attempt $attempt)"
+              git fetch origin gh-pages
+              git rebase origin/gh-pages
+            done
+          fi
