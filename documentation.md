@@ -335,6 +335,10 @@ logcloak exposes Prometheus metrics on port `9090` from the sidecar container.
 | `logcloak_processing_duration_seconds` | Per-line processing latency histogram |
 | `logcloak_webhook_admissions_total` | Webhook admission outcomes |
 | `logcloak_webhook_errors_total` | Webhook failures |
+| `logcloak_rule_cache_size` | Pod rule sets currently cached by the controller |
+| `logcloak_tls_cert_expiry_seconds` | Seconds until the webhook's TLS certificate expires |
+
+logcloak also emits structured JSON logs (`slog`) from the webhook and controller, and a `PodDisruptionBudget` (`minAvailable: 1` by default) ships with the chart so voluntary node drains can't take down every webhook replica at once. Set `serviceMonitor.enabled=true` if you run the Prometheus Operator.
 
 ---
 
@@ -352,6 +356,10 @@ logcloak exposes Prometheus metrics on port `9090` from the sidecar container.
 | `controller.ruleCacheTTL` | `30s` | How often the controller re-syncs rules |
 | `metrics.enabled` | `true` | Enable Prometheus metrics endpoint |
 | `metrics.port` | `9090` | Metrics port |
+| `podDisruptionBudget.enabled` | `true` | Create a PodDisruptionBudget for the webhook deployment |
+| `podDisruptionBudget.minAvailable` | `1` | Minimum available webhook replicas during a voluntary disruption |
+| `serviceMonitor.enabled` | `false` | Create a Prometheus Operator `ServiceMonitor` (requires the CRD to be installed) |
+| `serviceMonitor.interval` | `30s` | Scrape interval |
 
 ---
 

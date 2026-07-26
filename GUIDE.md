@@ -49,7 +49,7 @@ helm search repo logcloak
 **Output:**
 ```
 NAME              CHART VERSION  APP VERSION  DESCRIPTION
-logcloak/logcloak 0.2.2          0.2.2        Real-time Kubernetes pod log masker — redacts P...
+logcloak/logcloak 0.5.1          0.5.1        Real-time Kubernetes pod log masker — redacts P...
 ```
 
 ---
@@ -117,7 +117,13 @@ notBefore=Apr 23 08:14:04 2026 GMT
 notAfter=Apr 20 08:15:04 2027 GMT
 ```
 
-The certificate is valid for 1 year and auto-renewed on pod restart if it is missing.
+The certificate is valid for 1 year and rotates automatically before expiry — no manual renewal needed. Track time-to-expiry with the `logcloak_tls_cert_expiry_seconds` Prometheus gauge (see Observability below).
+
+### Reliability and observability
+
+- A `PodDisruptionBudget` (`minAvailable: 1` by default) ships with the chart, so a voluntary node drain can't take down every webhook replica at once.
+- Webhook and controller emit structured JSON logs (`slog`).
+- Prometheus metrics are on port `9090`: `logcloak_lines_processed_total`, `logcloak_lines_masked_total`, `logcloak_dropped_lines_total`, `logcloak_processing_duration_seconds`, `logcloak_webhook_admissions_total`, `logcloak_webhook_errors_total`, `logcloak_rule_cache_size`, `logcloak_tls_cert_expiry_seconds`. Set `--set serviceMonitor.enabled=true` if you run the Prometheus Operator.
 
 ---
 
@@ -327,7 +333,7 @@ There are two annotation types:
 
 ```yaml
 annotations:
-  logcloak.io/patterns: "uuid,pan-in"
+  logcloak.io/patterns: "uuid,iban"
 ```
 
 List one or more built-in pattern names separated by commas.
@@ -510,6 +516,19 @@ Protect these logs → kubectl label namespace <ns> logcloak.io/inject=true
 
 scan runs all 10 built-in patterns and highlights matched lines in yellow. Lines without PII are not shown. Install the CLI binary from the [GitHub releases page](https://github.com/1mr0-tech/logcloak/releases).
 
+### Other CLI commands
+
+```bash
+# Check a custom regex is RE2-safe before putting it in a MaskingPolicy or annotation
+logcloak validate 'ORD-[0-9]{8}'
+
+# Preview what a regex would mask against real log lines, without touching a cluster
+kubectl logs my-pod | logcloak preview 'ORD-[0-9]{8}'
+
+# Print CLI version
+logcloak version
+```
+
 ---
 
 ## Step 9 — Service mesh and non-standard sidecars
@@ -552,6 +571,7 @@ spec:
 
 ## Step 10 — kubectl logs behaviour reference
 
+
 | Command | What you see |
 |---|---|
 | `kubectl logs <pod>` | Masked output (logcloak sidecar is the default container) |
@@ -562,15 +582,18 @@ spec:
 
 ---
 
-## Step 10 — Uninstall
+## Step 11 — Uninstall
 
 ```bash
 helm uninstall logcloak -n logcloak
+kubectl delete crd maskingpolicies.logcloak.io
 kubectl delete namespace logcloak
 kubectl delete namespace production
 ```
 
-MaskingPolicy resources in other namespaces are removed automatically when their namespace is deleted. The CRD is removed by the Helm uninstall.
+Helm does not delete CRDs on uninstall (this is intentional Helm behavior, not a logcloak quirk) — run `kubectl delete crd maskingpolicies.logcloak.io` explicitly if you want `MaskingPolicy` resources gone too. Deleting a namespace removes any `MaskingPolicy` resources inside it, but the CRD definition itself persists across namespaces until deleted separately.
+
+Already-injected pods keep running with their `logcloak` sidecar attached until they're restarted — uninstalling the controller doesn't retroactively strip sidecars from existing pods.
 
 ---
 

@@ -88,7 +88,7 @@ metadata:
 ```bash
 # 4. Check logs — PII is masked
 kubectl logs my-pod
-# [2026-04-22T10:15:30Z] user [REDACTED:email] placed order ORD-[REDACTED:order-id]
+# [2026-04-22T10:15:30Z] user [REDACTED] placed order [REDACTED]
 ```
 
 ## Built-in patterns
@@ -213,7 +213,24 @@ When a line cannot be processed, logcloak never passes it through. A visible sen
 - Raw logs never touch the node filesystem (in-memory FIFO only)
 - RE2 regex engine — immune to ReDoS attacks
 - Fail-closed: processing failures suppress the line, never expose it
-- Sidecar runs as non-root UID 65534, read-only filesystem
+- Sidecar runs as non-root UID 65534, read-only filesystem, `seccompProfile: RuntimeDefault`
+- Webhook TLS cert rotates automatically before expiry (self-signed mode); `logcloak_tls_cert_expiry_seconds` gauge tracks time-to-expiry
+- `PodDisruptionBudget` (`minAvailable: 1` by default) so voluntary node drains can't take down every webhook replica at once
+
+## Observability
+
+Structured JSON logs (`slog`) from webhook and controller. Prometheus metrics on port `9090`:
+
+| Metric | What it tells you |
+|---|---|
+| `logcloak_lines_processed_total` / `logcloak_lines_masked_total` | Volume and hit rate of masking |
+| `logcloak_dropped_lines_total` | Lines suppressed by the fail-closed sentinel, by reason |
+| `logcloak_processing_duration_seconds` | Per-line masking latency |
+| `logcloak_webhook_admissions_total` / `logcloak_webhook_errors_total` | Admission outcomes and webhook failures |
+| `logcloak_rule_cache_size` | Pod rule sets currently cached by the controller |
+| `logcloak_tls_cert_expiry_seconds` | Seconds until the webhook's TLS cert expires |
+
+Set `serviceMonitor.enabled=true` if you run the Prometheus Operator.
 
 ## Installation options
 
