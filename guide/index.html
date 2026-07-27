@@ -102,7 +102,29 @@ Lines with PII:  1 (0.1%)
 Pattern hits:
   email:               1
 
-Protect these logs → kubectl label namespace &lt;ns&gt; logcloak.io/inject=true</code></pre></div><p>Also available: <code>logcloak validate '&lt;regex&gt;'</code> to check RE2-safety before deploying, and <code>logcloak preview '&lt;regex&gt;' [file]</code> to test masking output without touching a cluster.</p><h2 id="mesh">7. Service mesh compatibility</h2><p>logcloak is safe alongside Istio, Linkerd, and any other mesh — meshes intercept network traffic; logcloak intercepts stdout. These containers are always skipped: <code>istio-proxy</code>, <code>linkerd-proxy</code>, <code>envoy</code>, <code>envoy-sidecar</code>, <code>kuma-sidecar</code>, <code>consul-sidecar</code>, <code>vault-agent</code>, <code>config-reloader</code>.</p><p>For anything else (a postgres sidecar, a monitoring agent), exclude it explicitly:</p><div class="group relative my-4 overflow-hidden rounded-lg border border-border bg-[#0d0d0f]"><button type="button" class="copy-btn absolute right-2.5 top-2.5 rounded-md border border-border bg-card px-2 py-1 font-mono text-[0.68rem] text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100" data-code="metadata:
+Protect these logs → kubectl label namespace &lt;ns&gt; logcloak.io/inject=true</code></pre></div><h3>Check a MaskingPolicy for coverage gaps</h3><p><code>scan</code> tells you what PII exists in a log source. <code>logcloak audit</code> tells you whether a <em class="not-italic font-medium text-foreground">specific</em> <code>MaskingPolicy</code> you're about to apply would actually catch it — before you deploy it. It compiles the policy's configured builtin patterns, runs them alongside the full built-in library against the same sample, and shows exactly what <code>kubectl logs</code> would still expose.</p><div class="group relative my-4 overflow-hidden rounded-lg border border-border bg-[#0d0d0f]"><button type="button" class="copy-btn absolute right-2.5 top-2.5 rounded-md border border-border bg-card px-2 py-1 font-mono text-[0.68rem] text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100" data-code="logcloak audit masking-policy.yaml /var/log/app.log">copy</button><pre class="overflow-x-auto p-4 font-mono text-[0.8rem] leading-relaxed text-foreground/90"><code>logcloak audit masking-policy.yaml /var/log/app.log</code></pre></div><div class="group relative my-4 overflow-hidden rounded-lg border border-border bg-[#0d0d0f]"><button type="button" class="copy-btn absolute right-2.5 top-2.5 rounded-md border border-border bg-card px-2 py-1 font-mono text-[0.68rem] text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100" data-code="line 42     Processing payment for [REDACTED] card=4111111111111111 otp=[REDACTED]  [MISSING: credit-card]
+
+logcloak audit summary — policy: masking-policy.yaml
+Total lines:              1234
+Lines masked by policy:   3
+Lines with exposed PII:   1 (0.1%)
+Missing built-in patterns:
+  credit-card:         1 line(s)
+
+Add these to masking-policy.yaml → spec.patterns:
+  - name: credit-card
+    builtin: credit-card">copy</button><pre class="overflow-x-auto p-4 font-mono text-[0.8rem] leading-relaxed text-foreground/90"><code>line 42     Processing payment for [REDACTED] card=4111111111111111 otp=[REDACTED]  [MISSING: credit-card]
+
+logcloak audit summary — policy: masking-policy.yaml
+Total lines:              1234
+Lines masked by policy:   3
+Lines with exposed PII:   1 (0.1%)
+Missing built-in patterns:
+  credit-card:         1 line(s)
+
+Add these to masking-policy.yaml → spec.patterns:
+  - name: credit-card
+    builtin: credit-card</code></pre></div><p>Also available: <code>logcloak validate '&lt;regex&gt;'</code> to check RE2-safety before deploying, and <code>logcloak preview '&lt;regex&gt;' [file]</code> to test masking output without touching a cluster.</p><h2 id="mesh">7. Service mesh compatibility</h2><p>logcloak is safe alongside Istio, Linkerd, and any other mesh — meshes intercept network traffic; logcloak intercepts stdout. These containers are always skipped: <code>istio-proxy</code>, <code>linkerd-proxy</code>, <code>envoy</code>, <code>envoy-sidecar</code>, <code>kuma-sidecar</code>, <code>consul-sidecar</code>, <code>vault-agent</code>, <code>config-reloader</code>.</p><p>For anything else (a postgres sidecar, a monitoring agent), exclude it explicitly:</p><div class="group relative my-4 overflow-hidden rounded-lg border border-border bg-[#0d0d0f]"><button type="button" class="copy-btn absolute right-2.5 top-2.5 rounded-md border border-border bg-card px-2 py-1 font-mono text-[0.68rem] text-muted-foreground opacity-0 transition-opacity hover:text-foreground group-hover:opacity-100" data-code="metadata:
   annotations:
     logcloak.io/exclude-containers: &quot;postgres,redis,datadog-agent&quot;">copy</button><pre class="overflow-x-auto p-4 font-mono text-[0.8rem] leading-relaxed text-foreground/90"><code>metadata:
   annotations:
