@@ -7,6 +7,19 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.6.0] - 2026-07-27
+
+### Added
+
+- **`logcloak audit <policy.yaml> [file]` CLI command.** Checks a specific `MaskingPolicy` against a real log
+  sample and reports any built-in PII category the full pattern library detects that the policy's configured
+  `builtin:` patterns don't cover. Each gap is shown exactly as `kubectl logs` would render it under that
+  policy, plus copy-paste YAML to close it. Answers "would my policy actually catch this?" before deploying,
+  rather than after an incident. Scope: checks builtin-pattern coverage only — custom `regex:` rule quality
+  and JSON `field:` rules aren't part of the gap comparison.
+
+---
+
 ## [0.5.1] - 2026-07-25
 
 ### Fixed

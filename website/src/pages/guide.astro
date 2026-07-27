@@ -138,6 +138,11 @@ const toc = [
       <p><code>logcloak scan</code> checks what PII is currently leaking from any log source — no cluster required. Install the CLI binary from the <a href="https://github.com/1mr0-tech/logcloak/releases">GitHub releases page</a>.</p>
       <Code code={`kubectl logs my-pod | logcloak scan\nlogcloak scan /var/log/app.log`} />
       <Code code={`line 42     user [REDACTED:email] placed order        [email]\n\nlogcloak scan summary\nTotal lines:     1234\nLines with PII:  1 (0.1%)\nPattern hits:\n  email:               1\n\nProtect these logs → kubectl label namespace <ns> logcloak.io/inject=true`} />
+
+      <h3>Check a MaskingPolicy for coverage gaps</h3>
+      <p><code>scan</code> tells you what PII exists in a log source. <code>logcloak audit</code> tells you whether a <em class="not-italic font-medium text-foreground">specific</em> <code>MaskingPolicy</code> you're about to apply would actually catch it — before you deploy it. It compiles the policy's configured builtin patterns, runs them alongside the full built-in library against the same sample, and shows exactly what <code>kubectl logs</code> would still expose.</p>
+      <Code code={`logcloak audit masking-policy.yaml /var/log/app.log`} />
+      <Code code={`line 42     Processing payment for [REDACTED] card=4111111111111111 otp=[REDACTED]  [MISSING: credit-card]\n\nlogcloak audit summary — policy: masking-policy.yaml\nTotal lines:              1234\nLines masked by policy:   3\nLines with exposed PII:   1 (0.1%)\nMissing built-in patterns:\n  credit-card:         1 line(s)\n\nAdd these to masking-policy.yaml → spec.patterns:\n  - name: credit-card\n    builtin: credit-card`} />
       <p>Also available: <code>logcloak validate '&lt;regex&gt;'</code> to check RE2-safety before deploying, and <code>logcloak preview '&lt;regex&gt;' [file]</code> to test masking output without touching a cluster.</p>
 
       <h2 id="mesh">7. Service mesh compatibility</h2>

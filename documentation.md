@@ -236,6 +236,21 @@ Protect these logs → kubectl label namespace <ns> logcloak.io/inject=true
 
 ---
 
+## Checking policy coverage before you deploy
+
+`logcloak audit <policy.yaml> [file]` checks a specific `MaskingPolicy` against a real log sample and reports
+any built-in category the full pattern library detects that the policy's `builtin:` patterns don't cover:
+
+```bash
+logcloak audit masking-policy.yaml /var/log/app.log
+```
+
+Output shows each gap line exactly as `kubectl logs` would render it under that policy, plus copy-paste YAML
+to close each gap. It checks builtin-pattern coverage only — custom `regex:` rules and JSON `field:` rules are
+not evaluated for gaps, since they aren't part of the built-in comparison library.
+
+---
+
 ## Viewing logs
 
 ```bash

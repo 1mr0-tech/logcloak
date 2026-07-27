@@ -516,6 +516,43 @@ Protect these logs → kubectl label namespace <ns> logcloak.io/inject=true
 
 scan runs all 10 built-in patterns and highlights matched lines in yellow. Lines without PII are not shown. Install the CLI binary from the [GitHub releases page](https://github.com/1mr0-tech/logcloak/releases).
 
+## Check a MaskingPolicy for coverage gaps (logcloak audit)
+
+`scan` tells you what PII exists in a log source. `audit` tells you whether a *specific* `MaskingPolicy`
+you're about to apply would actually catch it — before you deploy it.
+
+```bash
+logcloak audit masking-policy.yaml /var/log/app.log
+```
+
+It compiles the policy's configured `builtin:` patterns, runs them alongside the full built-in pattern
+library against the same log sample, and reports any built-in category the library detects that your
+policy doesn't cover. Each gap line is shown exactly as `kubectl logs` would render it under your policy —
+so you see precisely what's still exposed, not just an abstract warning.
+
+**Example output:**
+```
+line 42     Processing payment for [REDACTED] card=4111111111111111 otp=[REDACTED]  [MISSING: credit-card]
+
+────────────────────────────────────────────────────────
+logcloak audit summary — policy: masking-policy.yaml
+────────────────────────────────────────────────────────
+Total lines:              1234
+Lines masked by policy:   3
+Lines with exposed PII:   1 (0.1%)
+Missing built-in patterns:
+  credit-card:         1 line(s)
+────────────────────────────────────────────────────────
+
+Add these to masking-policy.yaml → spec.patterns:
+  - name: credit-card
+    builtin: credit-card
+```
+
+> **Scope:** `audit` checks builtin-pattern coverage against the built-in library. It doesn't evaluate the
+> quality of your own custom `regex:` rules, and JSON `field:` rules are ignored in the gap comparison since
+> they target key names, not the regex-matchable value formats the built-in library scans for.
+
 ### Other CLI commands
 
 ```bash

@@ -177,6 +177,35 @@ Pattern hits:
 Protect these logs → kubectl label namespace <ns> logcloak.io/inject=true
 ```
 
+`logcloak scan` tells you what PII exists in your logs. `logcloak audit` tells you whether a specific
+`MaskingPolicy` would actually catch it — before you deploy it:
+
+```bash
+logcloak audit masking-policy.yaml /var/log/app.log
+```
+
+It runs your policy's configured builtin patterns alongside the full built-in pattern library and reports any
+gap — PII the library detects that your policy's `builtin:` patterns don't cover — with the exact `kubectl logs`
+output your policy would actually produce and copy-paste YAML to close the gap:
+
+```
+line 42     Processing payment for [REDACTED] card=4111111111111111 otp=[REDACTED]  [MISSING: credit-card]
+
+────────────────────────────────────────────────────────
+logcloak audit summary — policy: masking-policy.yaml
+────────────────────────────────────────────────────────
+Total lines:              1234
+Lines masked by policy:   3
+Lines with exposed PII:   1 (0.1%)
+Missing built-in patterns:
+  credit-card:         1 line(s)
+────────────────────────────────────────────────────────
+
+Add these to masking-policy.yaml → spec.patterns:
+  - name: credit-card
+    builtin: credit-card
+```
+
 ---
 
 ## Cluster-wide policies (MaskingPolicy CRD)

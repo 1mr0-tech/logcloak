@@ -28,6 +28,8 @@ func main() {
 		cmdPreview(os.Args[2:])
 	case "scan":
 		cmdScan(os.Args[2:])
+	case "audit":
+		cmdAudit(os.Args[2:])
 	case "version":
 		fmt.Printf("logcloak-cli %s\n", version)
 	default:
@@ -43,6 +45,7 @@ Usage:
   logcloak validate <regex>          Validate that a regex is RE2-safe
   logcloak preview <regex> [file]    Preview masking output (reads stdin if no file)
   logcloak scan [file]               Audit logs for PII using all built-in patterns
+  logcloak audit <policy.yaml> [file] Check a MaskingPolicy for coverage gaps against real logs
   logcloak version                   Print version`)
 }
 

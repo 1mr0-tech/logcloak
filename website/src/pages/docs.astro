@@ -7,6 +7,7 @@ const toc = [
   ['patterns', 'Built-in patterns'],
   ['custom-regex', 'Custom regex rules'],
   ['json-fields', 'JSON field masking'],
+  ['audit', 'Checking policy coverage (logcloak audit)'],
   ['mesh', 'Service mesh compatibility'],
   ['sentinel', 'Drop sentinel'],
   ['observability', 'Observability'],
@@ -104,6 +105,13 @@ const clusters = [
       <h2 id="json-fields">JSON field masking</h2>
       <p>Mask specific field names in structured JSON logs — regardless of value format — without affecting other fields. Applies to lines that begin with <code>{'{'}</code> and recurses into nested objects and arrays. Runs before regex rules, so both can be active at once.</p>
       <Code code={`# Via MaskingPolicy CRD\nspec:\n  patterns:\n    - name: password-field\n      field: password\n    - name: token-field\n      field: api_token\n\n# Via pod annotation\nmetadata:\n  annotations:\n    logcloak.io/fields: "password,token,api_key,card_number"`} />
+
+      <h2 id="audit">Checking policy coverage (logcloak audit)</h2>
+      <p><code>logcloak scan</code> tells you what PII exists in a log source. <code>logcloak audit &lt;policy.yaml&gt; [file]</code> tells you whether a <em class="not-italic font-medium text-foreground">specific</em> <code>MaskingPolicy</code> would actually catch it — before you deploy it. No cluster required.</p>
+      <Code code={`logcloak audit masking-policy.yaml /var/log/app.log`} />
+      <p>It compiles the policy's configured <code>builtin:</code> patterns, runs them alongside the full built-in pattern library against the same sample, and reports any built-in category the library detects that the policy doesn't cover — shown exactly as <code>kubectl logs</code> would render that line under the policy, plus copy-paste YAML to close the gap:</p>
+      <Code code={`line 42     Processing payment for [REDACTED] card=4111111111111111 otp=[REDACTED]  [MISSING: credit-card]\n\nlogcloak audit summary — policy: masking-policy.yaml\nTotal lines:              1234\nLines masked by policy:   3\nLines with exposed PII:   1 (0.1%)\nMissing built-in patterns:\n  credit-card:         1 line(s)\n\nAdd these to masking-policy.yaml → spec.patterns:\n  - name: credit-card\n    builtin: credit-card`} />
+      <p><strong class="text-foreground">Scope:</strong> checks builtin-pattern coverage only. Custom <code>regex:</code> rule quality isn't evaluated, and JSON <code>field:</code> rules are excluded from the gap comparison since they target key names, not the value formats the built-in library scans for.</p>
 
       <h2 id="mesh">Service mesh compatibility</h2>
       <p>logcloak is safe alongside Istio, Linkerd, Consul Connect, AWS App Mesh, and Kuma — meshes intercept traffic at the socket/iptables layer, entirely separate from stdout. These containers are always skipped:</p>
