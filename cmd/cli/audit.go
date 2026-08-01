@@ -117,22 +117,22 @@ func runAudit(policy rules.MaskingPolicy, in io.Reader) (auditResult, error) {
 
 func printAuditReport(w io.Writer, policyPath string, r auditResult) {
 	for _, h := range r.GapHits {
-		fmt.Fprintf(w, "line %-6d %s  \033[90m[MISSING: %s]\033[0m\n", h.LineNum, h.Display, strings.Join(h.Gaps, ", "))
+		_, _ = fmt.Fprintf(w, "line %-6d %s  \033[90m[MISSING: %s]\033[0m\n", h.LineNum, h.Display, strings.Join(h.Gaps, ", "))
 	}
 
 	sep := strings.Repeat("─", 56)
-	fmt.Fprintf(w, "\n%s\n", sep)
-	fmt.Fprintf(w, "logcloak audit summary — policy: %s\n", policyPath)
-	fmt.Fprintf(w, "%s\n", sep)
-	fmt.Fprintf(w, "Total lines:              %d\n", r.TotalLines)
-	fmt.Fprintf(w, "Lines masked by policy:   %d\n", r.LinesCovered)
-	fmt.Fprintf(w, "Lines with exposed PII:   %d", len(r.GapHits))
+	_, _ = fmt.Fprintf(w, "\n%s\n", sep)
+	_, _ = fmt.Fprintf(w, "logcloak audit summary — policy: %s\n", policyPath)
+	_, _ = fmt.Fprintf(w, "%s\n", sep)
+	_, _ = fmt.Fprintf(w, "Total lines:              %d\n", r.TotalLines)
+	_, _ = fmt.Fprintf(w, "Lines masked by policy:   %d\n", r.LinesCovered)
+	_, _ = fmt.Fprintf(w, "Lines with exposed PII:   %d", len(r.GapHits))
 	if r.TotalLines > 0 {
-		fmt.Fprintf(w, " (%.1f%%)", float64(len(r.GapHits))/float64(r.TotalLines)*100)
+		_, _ = fmt.Fprintf(w, " (%.1f%%)", float64(len(r.GapHits))/float64(r.TotalLines)*100)
 	}
-	fmt.Fprintln(w)
+	_, _ = fmt.Fprintln(w)
 	if len(r.GapCounts) > 0 {
-		fmt.Fprintf(w, "Missing built-in patterns:\n")
+		_, _ = fmt.Fprintf(w, "Missing built-in patterns:\n")
 		type kv struct {
 			name  string
 			count int
@@ -143,22 +143,22 @@ func printAuditReport(w io.Writer, policyPath string, r auditResult) {
 		}
 		sort.Slice(sorted, func(i, j int) bool { return sorted[i].count > sorted[j].count })
 		for _, item := range sorted {
-			fmt.Fprintf(w, "  %-20s %d line(s)\n", item.name+":", item.count)
+			_, _ = fmt.Fprintf(w, "  %-20s %d line(s)\n", item.name+":", item.count)
 		}
 	}
-	fmt.Fprintf(w, "%s\n", sep)
+	_, _ = fmt.Fprintf(w, "%s\n", sep)
 	if len(r.GapCounts) > 0 {
 		names := make([]string, 0, len(r.GapCounts))
 		for k := range r.GapCounts {
 			names = append(names, k)
 		}
 		sort.Strings(names)
-		fmt.Fprintf(w, "\nAdd these to %s → spec.patterns:\n", policyPath)
+		_, _ = fmt.Fprintf(w, "\nAdd these to %s → spec.patterns:\n", policyPath)
 		for _, n := range names {
-			fmt.Fprintf(w, "  - name: %s\n    builtin: %s\n", n, n)
+			_, _ = fmt.Fprintf(w, "  - name: %s\n    builtin: %s\n", n, n)
 		}
 	} else if r.TotalLines > 0 {
-		fmt.Fprintf(w, "\nNo gaps found against the built-in pattern library for this sample.\n")
+		_, _ = fmt.Fprintf(w, "\nNo gaps found against the built-in pattern library for this sample.\n")
 	}
 }
 
@@ -167,13 +167,13 @@ func printAuditReport(w io.Writer, policyPath string, r auditResult) {
 // policy's configured builtin patterns would not. No cluster needed.
 func cmdAudit(args []string) {
 	if len(args) == 0 {
-		fmt.Fprintln(os.Stderr, "usage: logcloak audit <maskingpolicy.yaml> [file]")
+		_, _ = fmt.Fprintln(os.Stderr, "usage: logcloak audit <maskingpolicy.yaml> [file]")
 		os.Exit(1)
 	}
 
 	policy, err := parseMaskingPolicy(args[0])
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		_, _ = fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 
@@ -181,7 +181,7 @@ func cmdAudit(args []string) {
 	if len(args) >= 2 {
 		in, err = os.Open(args[1])
 		if err != nil {
-			fmt.Fprintf(os.Stderr, "open: %v\n", err)
+			_, _ = fmt.Fprintf(os.Stderr, "open: %v\n", err)
 			os.Exit(1)
 		}
 		defer in.Close() //nolint:errcheck
@@ -191,7 +191,7 @@ func cmdAudit(args []string) {
 
 	result, err := runAudit(policy, in)
 	if err != nil {
-		fmt.Fprintln(os.Stderr, err)
+		_, _ = fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}
 	printAuditReport(os.Stdout, args[0], result)
