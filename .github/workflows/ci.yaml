@@ -19,7 +19,7 @@ jobs:
       with:
         fetch-depth: 0
     - name: Check DCO sign-off
-      uses: christophebedard/dco-check@v1.0.2
+      uses: christophebedard/dco-check@ec8bfc43106afe98b323ace9133650df10497e12 # 0.5.1
 
   unit:
     name: Unit Tests
