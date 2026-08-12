@@ -49,7 +49,7 @@ helm search repo logcloak
 **Output:**
 ```
 NAME              CHART VERSION  APP VERSION  DESCRIPTION
-logcloak/logcloak 0.5.1          0.5.1        Real-time Kubernetes pod log masker — redacts P...
+logcloak/logcloak 0.6.1          0.6.1        Real-time Kubernetes pod log masker — redacts P...
 ```
 
 ---

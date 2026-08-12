@@ -149,6 +149,8 @@ Field masking recurses into nested objects and arrays. It applies before regex r
 
 ## Audit your logs before deploying
 
+Grab the `logcloak` CLI from the [GitHub releases page](https://github.com/1mr0-tech/logcloak/releases) — download the binary for your OS/arch (e.g. `logcloak-cli-linux-amd64`), `chmod +x`, and put it on your `PATH`.
+
 Use `logcloak scan` to check what PII is currently leaking from any log source — no Kubernetes cluster required:
 
 ```bash
