@@ -7,6 +7,25 @@ Versioning follows [Semantic Versioning](https://semver.org/).
 
 ---
 
+## [0.6.1] - 2026-08-12
+
+### Fixed
+
+- **CI on `main` was broken across four independent points.** `cmd/cli/audit.go` (added in 0.6.0) had unchecked
+  `fmt.Fprintf`/`fmt.Fprintln` return values failing the Lint job's errcheck pass. `cmd/controller` and
+  `pkg/metrics` had no test files, which triggered a `go: no such tool 'covdata'` failure in CI's Go toolchain
+  under `go test -race -coverprofile=...`; both now have real tests. The DCO Sign-off job was pinned to a
+  `dco-check` action version that never existed, then (once fixed) failed to authenticate against the GitHub
+  API, then (once authenticated) correctly rejected dependabot's bot-authored commits due to an email mismatch
+  between commit author and sign-off — all three are now fixed.
+
+### Changed
+
+- **Upgraded to Go 1.25** (`go.mod`, CI workflows, `build/Dockerfile`) to pick up `golang.org/x/net` v0.55.0,
+  which requires Go 1.25 per its own `go.mod`.
+
+---
+
 ## [0.6.0] - 2026-07-27
 
 ### Added
